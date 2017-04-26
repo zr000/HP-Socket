@@ -46,6 +46,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	void SetAppState(EnAppState state);
+	static CStringA GetHeaderSummary(HP_HttpClient pSender, LPCSTR lpszSep = "  ", int iSepCount = 0, BOOL bWithContentLength = TRUE);
+
 private:
 	static En_HP_HandleResult __stdcall OnSend(HP_Client pSender, CONNID dwConnID, const BYTE* pData, int iLength);
 	static En_HP_HandleResult __stdcall OnReceive(HP_Client pSender, CONNID dwConnID, const BYTE* pData, int iLength);
@@ -68,14 +70,12 @@ private:
 	static En_HP_HandleResult __stdcall OnWSMessageBody(HP_HttpClient pSender, HP_CONNID dwConnID, const BYTE* pData, int iLength);
 	static En_HP_HandleResult __stdcall OnWSMessageComplete(HP_HttpClient pSender, HP_CONNID dwConnID);
 
-	static void CheckSetCookie(HP_HttpClient pSender);
-	static CStringA GetHeaderSummary(HP_HttpClient pSender, LPCSTR lpszSep = "  ", int iSepCount = 0, BOOL bWithContentLength = TRUE);
-
 private:
 	CButton m_Send;
 	CListBox m_Info;
 	CEdit m_Address;
 	CEdit m_Port;
+	CButton m_UseCookie;
 	CButton m_Async;
 	CButton m_Start;
 	CButton m_Stop;
@@ -89,6 +89,7 @@ private:
 	CEdit m_Body;
 
 	BOOL m_bWebSocket;
+	BOOL m_bUseCookie;
 	BOOL m_bAsyncConn;
 	EnAppState m_enState;
 

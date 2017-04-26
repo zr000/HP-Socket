@@ -71,7 +71,7 @@ namespace HPSocketCS
         {
             if (upgradeType == HttpUpgradeType.HttpTunnel)
             {
-                SendResponse(connId, HttpStatusCode.Ok, "Connection Established", null, null);
+                SendResponse(connId, HttpStatusCode.Ok, "Connection Established", null, null, 0);
             }
             else if (upgradeType == HttpUpgradeType.WebSocket)
             {
@@ -112,7 +112,7 @@ namespace HPSocketCS
 
                 }
 
-                SendResponse(connId, HttpStatusCode.SwitchingProtocols, null, headers, null);
+                SendResponse(connId, HttpStatusCode.SwitchingProtocols, null, headers, null, 0);
             }
             return HttpParseResult.Ok;
         }

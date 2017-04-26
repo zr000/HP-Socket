@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -238,8 +238,6 @@ BOOL CTcpAgent::Stop()
 	if(!CheckStoping())
 		return FALSE;
 	
-	::WaitWithMessageLoop(150);
-
 	DisconnectClientSocket();
 	WaitForClientSocketClose();
 	WaitForWorkerThreadEnd();
@@ -270,6 +268,8 @@ void CTcpAgent::Reset()
 
 void CTcpAgent::DisconnectClientSocket()
 {
+	::WaitWithMessageLoop(150);
+
 	DWORD size					= 0;
 	unique_ptr<CONNID[]> ids	= m_bfActiveSockets.GetAllElementIndexes(size);
 
@@ -291,10 +291,10 @@ TSocketObj*	CTcpAgent::GetFreeSocketObj(CONNID dwConnID, SOCKET soClient)
 	if(m_lsFreeSocket.TryLock(&pSocketObj, dwIndex))
 	{
 		if(::GetTimeGap32(pSocketObj->freeTime) >= m_dwFreeSocketObjLockTime)
-			m_lsFreeSocket.ReleaseLock(nullptr, dwIndex);
+			VERIFY(m_lsFreeSocket.ReleaseLock(nullptr, dwIndex));
 		else
 		{
-			m_lsFreeSocket.ReleaseLock(pSocketObj, dwIndex);
+			VERIFY(m_lsFreeSocket.ReleaseLock(pSocketObj, dwIndex));
 			pSocketObj = nullptr;
 		}
 	}
@@ -311,9 +311,9 @@ void CTcpAgent::AddFreeSocketObj(TSocketObj* pSocketObj, EnSocketCloseFlag enFla
 		return;
 
 	CloseClientSocketObj(pSocketObj, enFlag, enOperation, iErrorCode);
-	TSocketObj::Release(pSocketObj);
 
 	m_bfActiveSockets.Remove(pSocketObj->connID);
+	TSocketObj::Release(pSocketObj);
 
 	if(!m_lsFreeSocket.TryPut(pSocketObj))
 	{
@@ -914,7 +914,7 @@ void CTcpAgent::HandleConnect(CONNID dwConnID, TSocketObj* pSocketObj, TBufferOb
 {
 	::SSO_UpdateConnectContext(pBufferObj->client, 0);
 
-	if(TriggerFireConnect(pSocketObj) != HR_ERROR)
+	if(HasStarted() && TriggerFireConnect(pSocketObj) != HR_ERROR)
 		DoReceive(dwConnID, pSocketObj, pBufferObj);
 	else
 	{

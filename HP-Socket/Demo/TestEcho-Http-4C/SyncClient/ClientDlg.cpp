@@ -21,12 +21,34 @@ CClientDlg::CClientDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
-	m_spThis			= this;
-	m_HttpSyncClient	= nullptr;
+	m_spThis = this;
 
 	// 初始化 SSL 全局环境参数
 	::HP_SSL_Initialize(SSL_SM_CLIENT, SSL_VM_NONE, g_c_lpszPemCertFile, g_c_lpszPemKeyFile, g_c_lpszKeyPasswod, g_c_lpszCAPemCertFileOrPath, nullptr);
 	VERIFY(::HP_SSL_IsValid());
+
+	// 加载 Cookie
+	VERIFY(::HP_HttpCookie_MGR_LoadFromFile(CT2A(g_lpszDefaultCookieFile), FALSE) || ::GetLastError() == ERROR_FILE_NOT_FOUND);
+
+	// 创建监听器对象
+	m_HttpClientListener = ::Create_HP_HttpClientListener();
+	m_HttpSyncClient = nullptr;
+
+	// 设置 HTTP 监听器回调函数
+	::HP_Set_FN_HttpClient_OnConnect(m_HttpClientListener, OnConnect);
+	::HP_Set_FN_HttpClient_OnClose(m_HttpClientListener, OnClose);
+
+	::HP_Set_FN_HttpClient_OnHeader(m_HttpClientListener, OnHeader);
+	::HP_Set_FN_HttpClient_OnHeadersComplete(m_HttpClientListener, OnHeadersComplete);
+	::HP_Set_FN_HttpClient_OnBody(m_HttpClientListener, OnBody);
+	::HP_Set_FN_HttpClient_OnChunkHeader(m_HttpClientListener, OnChunkHeader);
+	::HP_Set_FN_HttpClient_OnChunkComplete(m_HttpClientListener, OnChunkComplete);
+	::HP_Set_FN_HttpClient_OnMessageComplete(m_HttpClientListener, OnMessageComplete);
+	::HP_Set_FN_HttpClient_OnUpgrade(m_HttpClientListener, OnUpgrade);
+
+	::HP_Set_FN_HttpClient_OnWSMessageHeader(m_HttpClientListener, OnWSMessageHeader);
+	::HP_Set_FN_HttpClient_OnWSMessageBody(m_HttpClientListener, OnWSMessageBody);
+	::HP_Set_FN_HttpClient_OnWSMessageComplete(m_HttpClientListener, OnWSMessageComplete);
 }
 
 CClientDlg::~CClientDlg()
@@ -34,6 +56,12 @@ CClientDlg::~CClientDlg()
 	// 销毁 HTTP 对象
 	if(m_HttpSyncClient != nullptr)
 		::Destroy_HP_HttpClient(m_HttpSyncClient);
+
+	// 销毁监听器对象
+	::Destroy_HP_HttpClientListener(m_HttpClientListener);
+
+	// 保存 Coookie
+	::HP_HttpCookie_MGR_SaveToFile(CT2A(g_lpszDefaultCookieFile), TRUE);
 
 	// 清理 SSL 全局运行环境
 	::HP_SSL_Cleanup();
@@ -46,6 +74,8 @@ void CClientDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_INFO, m_Info);
 	DDX_Control(pDX, IDC_ADDRESS, m_Address);
 	DDX_Control(pDX, IDC_PORT, m_Port);
+	DDX_Control(pDX, IDC_USE_COOKIE, m_UseCookie);
+	DDX_Control(pDX, IDC_LISTENER, m_Listener);
 	DDX_Control(pDX, IDC_START, m_Start);
 	DDX_Control(pDX, IDC_STOP, m_Stop);
 	DDX_Control(pDX, IDC_METHOD, m_Method);
@@ -90,12 +120,16 @@ BOOL CClientDlg::OnInitDialog()
 	m_Path.SetWindowText(DEFAULT_PATH);
 	m_Address.SetWindowText(DEFAULT_ADDRESS);
 	m_Port.SetWindowText(DEFAULT_PORT);
+	m_UseCookie.SetCheck(BST_CHECKED);
+	m_Listener.SetCheck(BST_CHECKED);
 
 	::SetMainWnd(this);
 	::SetInfoList(&m_Info);
 	SetAppState(ST_STOPPED);
 
 	m_bWebSocket = FALSE;
+	m_bUseCookie = FALSE;
+	m_bListener	 = FALSE;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -162,6 +196,8 @@ void CClientDlg::SetAppState(EnAppState state)
 	m_Start.EnableWindow(m_enState == ST_STOPPED);
 	m_Stop.EnableWindow(m_enState == ST_STARTED);
 	m_Send.EnableWindow(m_enState == ST_STARTED);
+	m_UseCookie.EnableWindow(m_enState == ST_STOPPED);
+	m_Listener.EnableWindow(m_enState == ST_STOPPED);
 	m_Schema.EnableWindow(m_enState == ST_STOPPED);
 	m_Address.EnableWindow(m_enState == ST_STOPPED);
 	m_Port.EnableWindow(m_enState == ST_STOPPED);
@@ -293,10 +329,12 @@ void CClientDlg::SendHttp()
 
 		::LogSend(dwConnID, strContent);
 
-		CheckSetCookie(m_HttpSyncClient);
 
-		CStringA strSummary = GetHeaderSummary(m_HttpSyncClient, "    ", 0, TRUE);
-		::PostOnHeadersComplete(dwConnID, strSummary);
+		if(!m_bListener)
+		{
+			CStringA strSummary = GetHeaderSummary(m_HttpSyncClient, "    ", 0, TRUE);
+			::PostOnHeadersComplete(dwConnID, strSummary);
+		}
 
 		LPCBYTE pData	= nullptr;
 		int iLength		= 0;
@@ -305,7 +343,7 @@ void CClientDlg::SendHttp()
 
 		if(iLength > 0)
 		{
-			::PostOnBody(dwConnID, pData, iLength);
+			if(!m_bListener) ::PostOnBody(dwConnID, pData, iLength);
 
 			LPCSTR lpszEnc = ::HP_HttpClient_GetContentEncoding(m_HttpSyncClient);
 
@@ -327,7 +365,8 @@ void CClientDlg::SendHttp()
 				else
 				{
 					::PostUncompressBodyFail(dwConnID, rs);
-					::PostOnMessageComplete(dwConnID);
+
+					if(!m_bListener) ::PostOnMessageComplete(dwConnID);
 
 					OnBnClickedStop();
 					return;
@@ -335,13 +374,13 @@ void CClientDlg::SendHttp()
 			}
 		}
 
-		::PostOnMessageComplete(dwConnID);
+		if(!m_bListener) ::PostOnMessageComplete(dwConnID);
 
 		En_HP_HttpUpgradeType enUpgrade = ::HP_HttpClient_GetUpgradeType(m_HttpSyncClient);
 
 		if(enUpgrade == HUT_WEB_SOCKET)
 		{
-			::PostOnUpgrade(dwConnID, enUpgrade);
+			if(!m_bListener) ::PostOnUpgrade(dwConnID, enUpgrade);
 
 			m_bWebSocket = TRUE;
 			OnCbnSelchangeMethod();
@@ -390,15 +429,17 @@ void CClientDlg::SendWebSocket()
 			ULONGLONG ullBodyLen;
 
 			VERIFY(::HP_HttpClient_GetWSMessageState(m_HttpSyncClient, &bFinal, &iReserved, &iOperationCode, &lpszMask, &ullBodyLen, nullptr));
-			::PostOnWSMessageHeader(dwConnID, bFinal, iReserved, iOperationCode, lpszMask, ullBodyLen);
+
+			if(!m_bListener) ::PostOnWSMessageHeader(dwConnID, bFinal, iReserved, iOperationCode, lpszMask, ullBodyLen);
 
 			if(ullBodyLen > 0)
 			{
 				::HP_HttpSyncClient_GetResponseBody(m_HttpSyncClient, (LPCBYTE*)&pData, &iLength);
-				::PostOnWSMessageBody(dwConnID, pData, iLength);
+				
+				if(!m_bListener) ::PostOnWSMessageBody(dwConnID, pData, iLength);
 			}
 
-			::PostOnWSMessageComplete(dwConnID);
+			if(!m_bListener) ::PostOnWSMessageComplete(dwConnID);
 
 			if(iOperationCode == 0x8)
 				OnBnClickedStop();
@@ -438,21 +479,25 @@ void CClientDlg::OnBnClickedStart()
 	USHORT usPort	= (USHORT)_ttoi(strPort);
 	BOOL isHttp		= m_Schema.GetCurSel() == 0;
 
+	m_bUseCookie	= m_UseCookie.GetCheck() == BST_CHECKED;
+	m_bListener		= m_Listener.GetCheck() == BST_CHECKED;
+
 	if(m_HttpSyncClient != nullptr)
 		::Destroy_HP_HttpSyncClient(m_HttpSyncClient);
 
 	if(isHttp)
-		m_HttpSyncClient = ::Create_HP_HttpSyncClient();
+		m_HttpSyncClient = ::Create_HP_HttpSyncClient(m_bListener ? m_HttpClientListener : nullptr);
 	else
-		m_HttpSyncClient = ::Create_HP_HttpsSyncClient();
+		m_HttpSyncClient = ::Create_HP_HttpsSyncClient(m_bListener ? m_HttpClientListener : nullptr);
+
+	::HP_HttpClient_SetUseCookie(m_HttpSyncClient, m_bUseCookie);
 
 	::LogClientStarting(strAddress, usPort);
 
 	if(::HP_Client_Start(m_HttpSyncClient, strAddress, usPort, FALSE))
 	{
-		::LogOnConnect3(::HP_Client_GetConnectionID(m_HttpSyncClient), strAddress, usPort);
+		if(!m_bListener) ::LogOnConnect3(::HP_Client_GetConnectionID(m_HttpSyncClient), strAddress, usPort);
 
-		::HP_HttpClient_AddCookie(m_HttpSyncClient, "__reqSequence", "1", TRUE);
 		SetAppState(ST_STARTED);
 	}
 	else
@@ -472,7 +517,8 @@ void CClientDlg::OnBnClickedStop()
 	while(::HP_Client_GetState(m_HttpSyncClient) != SS_STOPPED)
 		::Sleep(50);
 
-	::PostOnClose(::HP_Client_GetConnectionID(m_HttpSyncClient));
+	if(!m_bListener) ::PostOnClose(::HP_Client_GetConnectionID(m_HttpSyncClient));
+
 	SetAppState(ST_STOPPED);
 }
 
@@ -544,7 +590,8 @@ BOOL CClientDlg::CheckStarted(BOOL bRestart)
 
 		if(bRestart)
 		{
-			::LogOnClose(HP_Client_GetConnectionID(m_HttpSyncClient));
+			if(!m_bListener) ::LogOnClose(HP_Client_GetConnectionID(m_HttpSyncClient));
+
 			OnBnClickedStart();
 		}
 
@@ -553,42 +600,13 @@ BOOL CClientDlg::CheckStarted(BOOL bRestart)
 
 	if(state == SS_STOPPED)
 	{
-		::PostOnClose(HP_Client_GetConnectionID(m_HttpSyncClient));
+		if(!m_bListener) ::PostOnClose(HP_Client_GetConnectionID(m_HttpSyncClient));
+
 		SetAppState(ST_STOPPED);
 		return FALSE;
 	}
 
 	return TRUE;
-}
-
-void CClientDlg::CheckSetCookie(HP_HttpSyncClient pSender)
-{
-	DWORD dwHeaderCount = 0;
-	::HP_HttpClient_GetHeaders(pSender, "Set-Cookie", nullptr, &dwHeaderCount);
-
-	if(dwHeaderCount == 0)
-		return;
-
-	unique_ptr<LPCSTR[]> values(new LPCSTR[dwHeaderCount]);
-	VERIFY(::HP_HttpClient_GetHeaders(pSender, "Set-Cookie", values.get(), &dwHeaderCount));
-
-	for(DWORD i = 0; i < dwHeaderCount; i++)
-	{
-		CStringA strValue = values[i];
-
-		int j = 0;
-		CStringA strItem = strValue.Tokenize("; ", j);
-
-		if(j <= 0)
-			continue;
-
-		int k = strItem.Find('=');
-
-		if(k <= 0)
-			continue;
-
-		::HP_HttpClient_AddCookie(pSender, strItem.Left(k), strItem.Mid(k + 1), TRUE);
-	}
 }
 
 CStringA CClientDlg::GetHeaderSummary(HP_HttpSyncClient pSender, LPCSTR lpszSep, int iSepCount, BOOL bWithContentLength)
@@ -656,4 +674,93 @@ CStringA CClientDlg::GetHeaderSummary(HP_HttpSyncClient pSender, LPCSTR lpszSep,
 	strResult.AppendFormat("%s%13s: %s%s", SEP2, "ContentType", ::HP_HttpClient_GetContentType(pSender), CRLF);
  
 	return strResult;
+}
+
+EnHandleResult CClientDlg::OnConnect(HP_Client pSender, CONNID dwConnID)
+{
+	TCHAR szAddress[40];
+	int iAddressLen = sizeof(szAddress) / sizeof(TCHAR);
+	USHORT usPort;
+
+	::HP_Client_GetRemoteHost(pSender, szAddress, &iAddressLen, &usPort);
+	::PostOnConnect2(dwConnID, szAddress, usPort);
+
+	return HR_OK;
+}
+
+EnHandleResult CClientDlg::OnClose(HP_Client pSender, CONNID dwConnID, EnSocketOperation enOperation, int iErrorCode)
+{
+	::PostOnClose(dwConnID);
+
+	return HR_OK;
+}
+
+En_HP_HttpParseResult CClientDlg::OnHeader(HP_HttpClient pSender, CONNID dwConnID, LPCSTR lpszName, LPCSTR lpszValue)
+{
+	::PostOnHeader(dwConnID, lpszName, lpszValue);
+	return HPR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnHeadersComplete(HP_HttpClient pSender, CONNID dwConnID)
+{
+	CStringA strSummary = GetHeaderSummary(pSender, "    ", 0, TRUE);
+	::PostOnHeadersComplete(dwConnID, strSummary);
+
+	return HPR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnBody(HP_HttpClient pSender, CONNID dwConnID, const BYTE* pData, int iLength)
+{
+	::PostOnBody(dwConnID, pData, iLength);
+
+	return HPR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnChunkHeader(HP_HttpClient pSender, CONNID dwConnID, int iLength)
+{
+	::PostOnChunkHeader(dwConnID, iLength);
+
+	return HPR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnChunkComplete(HP_HttpClient pSender, CONNID dwConnID)
+{
+	::PostOnChunkComplete(dwConnID);
+
+	return HPR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnMessageComplete(HP_HttpClient pSender, CONNID dwConnID)
+{
+	::PostOnMessageComplete(dwConnID);
+
+	return HPR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnUpgrade(HP_HttpClient pSender, CONNID dwConnID, EnHttpUpgradeType enUpgradeType)
+{
+	::PostOnUpgrade(dwConnID, enUpgradeType);
+
+	return HPR_OK;
+}
+
+EnHandleResult CClientDlg::OnWSMessageHeader(HP_HttpClient pSender, CONNID dwConnID, BOOL bFinal, BYTE iReserved, BYTE iOperationCode, const BYTE lpszMask[4], ULONGLONG ullBodyLen)
+{
+	::PostOnWSMessageHeader(dwConnID, bFinal, iReserved, iOperationCode, lpszMask, ullBodyLen);
+
+	return HR_OK;
+}
+
+EnHandleResult CClientDlg::OnWSMessageBody(HP_HttpClient pSender, CONNID dwConnID, const BYTE* pData, int iLength)
+{
+	::PostOnWSMessageBody(dwConnID, pData, iLength);
+
+	return HR_OK;
+}
+
+EnHandleResult CClientDlg::OnWSMessageComplete(HP_HttpClient pSender, CONNID dwConnID)
+{
+	::PostOnWSMessageComplete(dwConnID);
+
+	return HR_OK;
 }

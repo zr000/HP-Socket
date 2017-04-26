@@ -22,6 +22,19 @@ namespace HPSocketCS
         public delegate HandleResult OnHandShakeEventHandler(IntPtr connId);
     }
 
+    public class TcpServer<T> : TcpServer
+    {
+        public new T GetExtra(IntPtr connId)
+        {
+            return base.GetExtra<T>(connId);
+        }
+
+        public bool SetExtra(IntPtr connId, T obj)
+        {
+            return base.SetExtra(connId, obj);
+        }
+    }
+
     public class TcpServer : ConnectionExtra
     {
         protected IntPtr _pServer = IntPtr.Zero;
@@ -582,6 +595,17 @@ namespace HPSocketCS
                 return Sdk.HP_Server_GetConnectionCount(pServer);
             }
 
+        }
+
+        /// <summary>
+        /// 检测是否为安全连接（SSL/HTTPS）
+        /// </summary>
+        public bool IsSecure
+        {
+            get
+            {
+                return Sdk.HP_Server_IsSecure(pServer);
+            }
         }
 
         /// <summary>

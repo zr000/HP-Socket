@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -273,7 +273,7 @@ HPSOCKET_API IHttpAgent* HP_Create_HttpsAgent(IHttpAgentListener* pListener);
 // 创建 IHttpClient 对象
 HPSOCKET_API IHttpClient* HP_Create_HttpsClient(IHttpClientListener* pListener);
 // 创建 IHttpSyncClient 对象
-HPSOCKET_API IHttpSyncClient* HP_Create_HttpsSyncClient();
+HPSOCKET_API IHttpSyncClient* HP_Create_HttpsSyncClient(IHttpClientListener* pListener);
 
 // 销毁 IHttpServer 对象
 HPSOCKET_API void HP_Destroy_HttpsServer(IHttpServer* pServer);
@@ -329,9 +329,9 @@ struct HttpsClient_Creator
 // IHttpSyncClient 对象创建器
 struct HttpsSyncClient_Creator
 {
-	static IHttpSyncClient* Create()
+	static IHttpSyncClient* Create(IHttpClientListener* pListener)
 	{
-		return HP_Create_HttpsSyncClient();
+		return HP_Create_HttpsSyncClient(pListener);
 	}
 
 	static void Destroy(IHttpSyncClient* pClient)

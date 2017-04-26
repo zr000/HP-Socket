@@ -411,14 +411,26 @@ EnHttpParseResult CHttpServerListenerImpl::OnMessageComplete(IHttpServer* pSende
 
 	DWORD dwSeq				= 1;
 	LPCSTR lpszReqSequence	= nullptr;
+	CStringA strSeq;
 
-	if(pSender->GetCookie(dwConnID, "__reqSequence", &lpszReqSequence))
+	if(pSender->GetCookie(dwConnID, "__reqSequence_1", &lpszReqSequence))
 		dwSeq += atoi(lpszReqSequence);
 
-	CStringA strSeqCookie;
-	strSeqCookie.Format("__reqSequence=%u; path=/", dwSeq);
+	strSeq.Format("%u", dwSeq);
 
-	THeader header[] = {{"Content-Type", "text/plain"}, {"Content-Length", strContentLength}, {"Set-Cookie", strSeqCookie}};
+	CStringA strSeqCookie1 = CCookie::ToString("__reqSequence_1", strSeq, nullptr, nullptr, -1, TRUE, TRUE, CCookie::SS_LAX);
+
+	dwSeq			= 1;
+	lpszReqSequence	= nullptr;
+
+	if(pSender->GetCookie(dwConnID, "__reqSequence_2", &lpszReqSequence))
+		dwSeq += atoi(lpszReqSequence);
+
+	strSeq.Format("%u", dwSeq);
+
+	CStringA strSeqCookie2 = CCookie::ToString("__reqSequence_2", strSeq, nullptr, "/", 300, FALSE, FALSE, CCookie::SS_NONE);
+
+	THeader header[] = {{"Content-Type", "text/plain"}, {"Content-Length", strContentLength}, {"Set-Cookie", strSeqCookie1}, {"Set-Cookie", strSeqCookie2}};
 	int iHeaderCount = sizeof(header) / sizeof(THeader);
 
 	if(bSkipBody)

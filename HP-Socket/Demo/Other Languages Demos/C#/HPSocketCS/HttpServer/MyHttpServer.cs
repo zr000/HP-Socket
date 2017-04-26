@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using HPSocketCS;
 
-namespace HttpService
+namespace HttpServerDemo
 {
     public class MyHttpServer
     {
@@ -16,7 +16,8 @@ namespace HttpService
             httpServer.IpAddress = bindAddress;
             httpServer.Port = port;
 
-            // 设置http服务器事件
+            /*
+            // tcp事件
             httpServer.OnPrepareListen += new TcpServerEvent.OnPrepareListenEventHandler(OnPrepareListen);
             httpServer.OnAccept += new TcpServerEvent.OnAcceptEventHandler(OnAccept);
             httpServer.OnSend += new TcpServerEvent.OnSendEventHandler(OnSend);
@@ -24,8 +25,9 @@ namespace HttpService
             httpServer.OnClose += new TcpServerEvent.OnCloseEventHandler(OnClose);
             httpServer.OnShutdown += new TcpServerEvent.OnShutdownEventHandler(OnShutdown);
             httpServer.OnHandShake += new TcpServerEvent.OnHandShakeEventHandler(OnHandShake);
+            */
 
-
+            // 设置http服务器事件
             httpServer.OnMessageBegin += new HttpEvent.OnMessageBeginEventHandler(OnMessageBegin);
             httpServer.OnHeader += new HttpEvent.OnHeaderEventHandler(OnHeader);
             httpServer.OnChunkHeader += new HttpEvent.OnChunkHeaderEventHandler(OnChunkHeader);
@@ -43,7 +45,6 @@ namespace HttpService
             }
 
         }
-
 
         private string GetHeaderSummary(IntPtr connId, string sep, int sepCount, bool withContentLength)
         {
@@ -188,6 +189,7 @@ namespace HttpService
             var arr = httpServer.GetAllCookies(connId);
 
             bool isSkipBody = httpServer.GetMethod(connId) == "HEAD";
+            
             uint sequence = 0;
             if (uint.TryParse(httpServer.GetCookie(connId, "requestSequence"), out sequence))
             {
@@ -197,21 +199,23 @@ namespace HttpService
             string cookie = string.Format("requestSequence={0}; path=/", sequence);
 
             string body = GetHeaderSummary(connId, "    ", 0, false);
-
-            THeader[] headers =
-            {
-                new THeader() { Name= "Content-Type", Value = "text/plain" },
-                new THeader() { Name= "Content-Length", Value = body.Length.ToString() },
-                new THeader() { Name= "Set-Cookie", Value = cookie},
-            };
-
             if (isSkipBody)
             {
                 body = "";
             }
 
+            // 这里的utf8 对应Content-Type里的charset, 能保证中文不乱码
+            var bytes = Encoding.UTF8.GetBytes(body);
+            THeader[] headers =
+            {
+                // 这里请参照http协议
+                new THeader() { Name= "Content-Type", Value = "text/plain;charset=utf-8" },
+                new THeader() { Name= "Content-Length", Value = bytes.Length.ToString() },
+                new THeader() { Name= "Set-Cookie", Value = cookie},
+            };
+            
             // 回复请求
-            httpServer.SendResponse(connId, HttpStatusCode.Ok, "Http Server OK", headers, body);
+            httpServer.SendResponse(connId, HttpStatusCode.Ok, "Http Server OK", headers, bytes, bytes.Length);
 
             // 不是长连接就断开
             if (httpServer.IsKeepAlive(connId) == false)
@@ -234,7 +238,7 @@ namespace HttpService
         }
 
         /**************************************************************************/
-
+        /*
         private HandleResult OnPrepareListen(IntPtr soListen)
         {
             return HandleResult.Ok;
@@ -268,6 +272,6 @@ namespace HttpService
         private HandleResult OnShutdown()
         {
             return HandleResult.Ok;
-        }
+        }*/
     }
 }

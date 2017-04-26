@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -600,10 +600,10 @@ CSSLSession* CSSLSessionPool::PickFreeSession(LPCSTR lpszHostName)
 	if(m_lsFreeSession.TryLock(&pSession, dwIndex))
 	{
 		if(::GetTimeGap32(pSession->GetFreeTime()) >= m_dwSessionLockTime)
-			m_lsFreeSession.ReleaseLock(nullptr, dwIndex);
+			VERIFY(m_lsFreeSession.ReleaseLock(nullptr, dwIndex));
 		else
 		{
-			m_lsFreeSession.ReleaseLock(pSession, dwIndex);
+			VERIFY(m_lsFreeSession.ReleaseLock(pSession, dwIndex));
 			pSession = nullptr;
 		}
 	}

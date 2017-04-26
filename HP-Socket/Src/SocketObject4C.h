@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -75,7 +75,6 @@ template<class T, class L, int offset = 0> class C_HP_ObjectT : private C_HP_Obj
 {
 public:
 	C_HP_ObjectT(L* pListener)	: C_HP_Object(offset), T(pListener)	{}
-	C_HP_ObjectT()				: C_HP_Object(offset), T()			{}
 };
 
 template<class T, class L, size_t offset = 0> class C_HP_ServerListenerT : public L

@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -335,10 +335,10 @@ TUdpSocketObj* CUdpServer::GetFreeSocketObj(CONNID dwConnID)
 	if(m_lsFreeSocket.TryLock(&pSocketObj, dwIndex))
 	{
 		if(::GetTimeGap32(pSocketObj->freeTime) >= m_dwFreeSocketObjLockTime)
-			m_lsFreeSocket.ReleaseLock(nullptr, dwIndex);
+			VERIFY(m_lsFreeSocket.ReleaseLock(nullptr, dwIndex));
 		else
 		{
-			m_lsFreeSocket.ReleaseLock(pSocketObj, dwIndex);
+			VERIFY(m_lsFreeSocket.ReleaseLock(pSocketObj, dwIndex));
 			pSocketObj = nullptr;
 		}
 	}
@@ -360,14 +360,15 @@ void CUdpServer::AddFreeSocketObj(TUdpSocketObj* pSocketObj, EnSocketCloseFlag e
 		return;
 
 	CloseClientSocketObj(pSocketObj, enFlag, enOperation, iErrorCode);
-	TUdpSocketObj::Release(pSocketObj);
 
 	{
+		m_bfActiveSockets.Remove(pSocketObj->connID);
+
 		CReentrantWriteLock locallock(m_csClientSocket);
 		m_mpClientAddr.erase(&pSocketObj->remoteAddr);
 	}
 
-	m_bfActiveSockets.Remove(pSocketObj->connID);
+	TUdpSocketObj::Release(pSocketObj);
 
 	if(!m_lsFreeSocket.TryPut(pSocketObj))
 	{
@@ -1002,7 +1003,7 @@ CONNID CUdpServer::HandleAccept(TUdpBufferObj* pBufferObj)
 			return dwConnID;
 		else
 		{
-			if(!m_bfActiveSockets.AcquireLock(dwConnID))
+			if(!HasStarted() || !m_bfActiveSockets.AcquireLock(dwConnID))
 				return 0;
 
 			pSocketObj = GetFreeSocketObj(dwConnID);

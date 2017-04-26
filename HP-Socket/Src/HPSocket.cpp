@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -184,9 +184,9 @@ HPSOCKET_API IHttpClient* HP_Create_HttpClient(IHttpClientListener* pListener)
 	return (IHttpClient*)(new CHttpClient(pListener));
 }
 
-HPSOCKET_API IHttpSyncClient* HP_Create_HttpSyncClient()
+HPSOCKET_API IHttpSyncClient* HP_Create_HttpSyncClient(IHttpClientListener* pListener)
 {
-	return (IHttpSyncClient*)(new CHttpSyncClient());
+	return (IHttpSyncClient*)(new CHttpSyncClient(pListener));
 }
 
 HPSOCKET_API void HP_Destroy_HttpServer(IHttpServer* pServer)
@@ -207,6 +207,79 @@ HPSOCKET_API void HP_Destroy_HttpClient(IHttpClient* pClient)
 HPSOCKET_API void HP_Destroy_HttpSyncClient(IHttpSyncClient* pClient)
 {
 	delete pClient;
+}
+
+/**************************************************************************/
+/*************************** HTTP Cookie 管理方法 **************************/
+
+HPSOCKET_API BOOL HP_HttpCookie_MGR_LoadFromFile(LPCSTR lpszFile, BOOL bKeepExists)
+{
+	return g_CookieMgr.LoadFromFile(lpszFile, bKeepExists);
+}
+
+HPSOCKET_API BOOL HP_HttpCookie_MGR_SaveToFile(LPCSTR lpszFile, BOOL bKeepExists)
+{
+	return g_CookieMgr.SaveToFile(lpszFile, bKeepExists);
+}
+
+HPSOCKET_API BOOL HP_HttpCookie_MGR_ClearCookies(LPCSTR lpszDomain, LPCSTR lpszPath)
+{
+	return g_CookieMgr.ClearCookies(lpszDomain, lpszPath);
+}
+
+HPSOCKET_API BOOL HP_HttpCookie_MGR_RemoveExpiredCookies(LPCSTR lpszDomain, LPCSTR lpszPath)
+{
+	return g_CookieMgr.RemoveExpiredCookies(lpszDomain, lpszPath);
+}
+
+HPSOCKET_API BOOL HP_HttpCookie_MGR_SetCookie(LPCSTR lpszName, LPCSTR lpszValue, LPCSTR lpszDomain, LPCSTR lpszPath, int iMaxAge, BOOL bHttpOnly, BOOL bSecure, int enSameSite, BOOL bOnlyUpdateValueIfExists)
+{
+	return g_CookieMgr.SetCookie(lpszName, lpszValue, lpszDomain, lpszPath, iMaxAge, bHttpOnly, bSecure, (CCookie::EnSameSite)enSameSite, bOnlyUpdateValueIfExists);
+}
+
+HPSOCKET_API BOOL HP_HttpCookie_MGR_DeleteCookie(LPCSTR lpszDomain, LPCSTR lpszPath, LPCSTR lpszName)
+{
+	return g_CookieMgr.DeleteCookie(lpszDomain, lpszPath, lpszName);
+}
+
+HPSOCKET_API void HP_HttpCookie_MGR_SetEnableThirdPartyCookie(BOOL bEnableThirdPartyCookie)
+{
+	g_CookieMgr.SetEnableThirdPartyCookie(bEnableThirdPartyCookie);
+}
+
+HPSOCKET_API BOOL HP_HttpCookie_MGR_IsEnableThirdPartyCookie()
+{
+	return g_CookieMgr.IsEnableThirdPartyCookie();
+}
+
+HPSOCKET_API BOOL HP_HttpCookie_HLP_ParseExpires(LPCSTR lpszExpires, __time64_t& tmExpires)
+{
+	return CCookie::ParseExpires(lpszExpires, tmExpires);
+}
+
+HPSOCKET_API BOOL HP_HttpCookie_HLP_MakeExpiresStr(char lpszBuff[], int& iBuffLen, __time64_t tmExpires)
+{
+	return CCookie::MakeExpiresStr(lpszBuff, iBuffLen, tmExpires);
+}
+
+HPSOCKET_API BOOL HP_HttpCookie_HLP_ToString(char lpszBuff[], int& iBuffLen, LPCSTR lpszName, LPCSTR lpszValue, LPCSTR lpszDomain, LPCSTR lpszPath, int iMaxAge, BOOL bHttpOnly, BOOL bSecure, int enSameSite)
+{
+	return CCookie::ToString(lpszBuff, iBuffLen, lpszName, lpszValue, lpszDomain, lpszPath, iMaxAge, bHttpOnly, bSecure, (CCookie::EnSameSite)enSameSite);
+}
+
+HPSOCKET_API __time64_t HP_HttpCookie_HLP_CurrentUTCTime()
+{
+	return CCookie::CurrentUTCTime();
+}
+
+HPSOCKET_API __time64_t HP_HttpCookie_HLP_MaxAgeToExpires(int iMaxAge)
+{
+	return CCookie::MaxAgeToExpires(iMaxAge);
+}
+
+HPSOCKET_API int HP_HttpCookie_HLP_ExpiresToMaxAge(__time64_t tmExpires)
+{
+	return CCookie::ExpiresToMaxAge(tmExpires);
 }
 
 /*****************************************************************************************************************************************************/

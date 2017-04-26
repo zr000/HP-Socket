@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 2.3.17
+ * Version	: 2.3.18
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -245,42 +245,6 @@ public:
 		return TRUE;
 	}
 
-	BOOL Create(DWORD dwExpect = DEFAULT_EXPECT)
-	{
-		ASSERT(!IsValid() && dwExpect > 0);
-
-		if(IsValid()) return FALSE;
-
-		m_seqPut = 0;
-		m_seqGet = 0;
-		m_dwReal = Revise(dwExpect);
-		m_pv	 = (T**)malloc(m_dwReal * sizeof(T*));
-		m_bValid = (m_pv != nullptr);
-
-		return IsValid();
-	}
-
-	BOOL Destroy()
-	{
-		if(IsValid())
-		{
-			m_bValid = FALSE;
-
-			CLocalLock<_PutGuard> locallock1(m_csPut);
-			CLocalLock<_GetGuard> locallock2(m_csGet);
-
-			free((void*)m_pv);
-			m_pv	 = nullptr;
-			m_dwReal = 0;
-			m_seqPut = 0;
-			m_seqGet = 0;
-
-			return TRUE;
-		}
-
-		return FALSE;
-	}
-
 private:
 	void DoPut(T* pElement, ULONGLONG& seqPut)
 	{
@@ -368,35 +332,60 @@ private:
 	}
 
 public:
-	CRingBuffer(BOOL bCreate = FALSE, DWORD uiExpect = DEFAULT_EXPECT)
+	CRingBuffer(DWORD uiExpect = DEFAULT_EXPECT)
 	: m_pv(nullptr)
-	, m_bValid(FALSE)
 	, m_dwReal(0)
 	, m_seqPut(0)
 	, m_seqGet(0)
 	{
-		ASSERT(uiExpect > 0);
-
-		if(bCreate)
-		{
-			Create(uiExpect);
-			ASSERT(IsValid());
-		}
+		Reset(uiExpect);
 	}
 
 	~CRingBuffer()
 	{
-		Destroy();
+		Reset(0);
 	}
 
-	BOOL IsValid() {return m_bValid;}
+	void Reset(DWORD uiExpect = DEFAULT_EXPECT)
+	{
+		if(IsValid())
+			Destroy();
+		if(uiExpect > 0)
+			Create(uiExpect);
+	}
+
+	BOOL IsValid() {return m_pv != nullptr;}
+
+private:
+	void Create(DWORD dwExpect = DEFAULT_EXPECT)
+	{
+		ASSERT(!IsValid() && dwExpect > 0);
+
+		m_seqPut = 0;
+		m_seqGet = 0;
+		m_dwReal = Revise(dwExpect);
+		m_pv	 = (T**)malloc(m_dwReal * sizeof(T*));
+	}
+
+	void Destroy()
+	{
+		ASSERT(IsValid());
+
+		CLocalLock<_PutGuard> locallock1(m_csPut);
+		CLocalLock<_GetGuard> locallock2(m_csGet);
+
+		free((void*)m_pv);
+		m_pv	 = nullptr;
+		m_dwReal = 0;
+		m_seqPut = 0;
+		m_seqGet = 0;
+	}
 
 private:
 	CRingBuffer(const CRingBuffer&);
 	CRingBuffer operator = (const CRingBuffer&);
 
 private:
-	BOOL				m_bValid;
 	DWORD				m_dwReal;
 	T**					m_pv;
 	char				pack1[PACK_SIZE_OF(T**)];
@@ -449,6 +438,8 @@ public:
 	{
 		ASSERT(pElement != nullptr);
 
+		if(!IsValid()) return FALSE;
+
 		BOOL isOK = FALSE;
 
 		while(true)
@@ -488,7 +479,7 @@ public:
 		ASSERT(dwIndex <= m_dwSize);
 		ASSERT(ppElement != nullptr);
 
-		if(INDEX_DEC(dwIndex) >= m_dwSize)
+		if(!IsValid() || INDEX_DEC(dwIndex) >= m_dwSize)
 		{
 			*ppElement = nullptr;
 			return GR_FAIL;
@@ -793,6 +784,8 @@ public:
 	{
 		ASSERT(pElement != nullptr);
 
+		if(!IsValid()) return FALSE;
+
 		BOOL isOK = FALSE;
 
 		while(true)
@@ -831,7 +824,7 @@ public:
 	{
 		ASSERT(ppElement != nullptr);
 
-		if(!INDEX_V2R(INDEX_DEC(dwIndex)))
+		if(!IsValid() || !INDEX_V2R(INDEX_DEC(dwIndex)))
 		{
 			*ppElement = nullptr;
 			return GR_FAIL;
@@ -964,6 +957,7 @@ public:
 		}
 
 		dwCount = dwSize;
+
 		return isOK;
 	}
 	
@@ -1127,6 +1121,8 @@ public:
 	{
 		ASSERT(pElement != nullptr);
 
+		if(!IsValid()) return FALSE;
+
 		BOOL isOK = FALSE;
 
 		while(true)
@@ -1169,6 +1165,8 @@ public:
 	{
 		ASSERT(ppElement != nullptr);
 
+		if(!IsValid()) return FALSE;
+
 		BOOL isOK = FALSE;
 
 		while(true)
@@ -1205,6 +1203,8 @@ public:
 	{
 		ASSERT(ppElement != nullptr);
 
+		if(!IsValid()) return FALSE;
+
 		BOOL isOK = FALSE;
 
 		while(true)
@@ -1237,10 +1237,12 @@ public:
 		return isOK;
 	}
 
-	void ReleaseLock(TPTR pElement, DWORD dwIndex)
+	BOOL ReleaseLock(TPTR pElement, DWORD dwIndex)
 	{
 		ASSERT(dwIndex < m_dwSize);
 		ASSERT(pElement == nullptr || pElement > E_MAX_STATUS);
+
+		if(!IsValid()) return FALSE;
 
 		VTPTR& pValue = INDEX_VAL(dwIndex);
 		VERIFY(pValue == E_LOCKED);
@@ -1259,7 +1261,7 @@ public:
 					pValue = pElement;
 					::InterlockedIncrement(&m_seqPut);
 
-					return;
+					return TRUE;
 				}
 
 				::YieldThread(i);
@@ -1267,6 +1269,8 @@ public:
 		}
 
 		pValue = E_RELEASED;
+
+		return TRUE;
 	}
 
 public:
@@ -1289,12 +1293,12 @@ private:
 
 	BOOL HasPutSpace(DWORD seqPut)
 	{
-		return (seqPut - m_seqGet < m_dwSize);
+		return ((int)(seqPut - m_seqGet) < (int)m_dwSize);
 	}
 
 	BOOL HasGetSpace(DWORD seqGet)
 	{
-		return (m_seqPut - seqGet > 0);
+		return ((int)(m_seqPut - seqGet) > 0);
 	}
 
 	void Create(DWORD dwSize)

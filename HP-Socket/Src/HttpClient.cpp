@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -49,8 +49,14 @@ template<class R, class T, USHORT default_port> BOOL CHttpClientT<R, T, default_
 	GetRemoteHost(&lpszHost, &usPort);
 	if(usPort == default_port) usPort = 0;
 
+	CStringA strPath;
+	::AdjustRequestPath(lpszPath, strPath);
+
+	m_objHttp.SetRequestPath(strPath);
+	m_objHttp.ReloadCookies();
+
 	::MakeRequestLine(lpszMethod, lpszPath, m_enLocalVersion, strHeader);
-	::MakeHeaderLines(lpHeaders, iHeaderCount, &m_objHttp.GetCookieMap(), iLength, TRUE, lpszHost, usPort, strHeader);
+	::MakeHeaderLines(lpHeaders, iHeaderCount, &m_objHttp.GetCookieMap(), iLength, TRUE, -1, lpszHost, usPort, strHeader);
 	::MakeHttpPacket(strHeader, pBody, iLength, szBuffer);
 
 	return SendPackets(szBuffer, 2);
@@ -236,26 +242,32 @@ template<class T, USHORT default_port> BOOL CHttpSyncClientT<T, default_port>::O
 
 template<class T, USHORT default_port> BOOL CHttpSyncClientT<T, default_port>::CleanupRequestResult()
 {
+	m_pHttpObj	 = &m_objHttp;
+	m_enProgress = HSRP_WAITING;
+
 	m_szBuffer.Free();
 	m_objHttp2.Reset();
+	m_evWait.Reset();
 	
-	ResetRequestEvent();
-
 	return TRUE;
 }
 
-template<class T, USHORT default_port> void CHttpSyncClientT<T, default_port>::ResetRequestEvent()
+template<class T, USHORT default_port> void CHttpSyncClientT<T, default_port>::SetRequestEvent(EnHttpSyncRequestProgress enProgress, BOOL bCopyHttpObj)
 {
-	m_enProgress = HSRP_WAITING;
-	m_evWait.Reset();
-}
+	if(m_enProgress != HSRP_WAITING)
+		return;
 
-template<class T, USHORT default_port> void CHttpSyncClientT<T, default_port>::SetRequestEvent(EnHttpSyncRequestProgress enProgress)
-{
-	if(m_enProgress == HSRP_WAITING)
+	m_enProgress = enProgress;
+
+	if(bCopyHttpObj)
 	{
-		m_enProgress = enProgress;
-		m_evWait.Set();}
+		m_objHttp2.CopyData(m_objHttp);
+		m_objHttp2.CopyWSContext(m_objHttp);
+
+		m_pHttpObj = &m_objHttp2;
+	}
+
+	m_evWait.Set();
 }
 
 template<class T, USHORT default_port> BOOL CHttpSyncClientT<T, default_port>::GetResponseBody(LPCBYTE* lpszBody, int* iLength)
@@ -270,75 +282,218 @@ template<class T, USHORT default_port> BOOL CHttpSyncClientT<T, default_port>::G
 
 template<class T, USHORT default_port> EnHandleResult CHttpSyncClientT<T, default_port>::OnHandShake(ITcpClient* pSender, CONNID dwConnID)
 {
-	SetRequestEvent(HSRP_DONE);
+	EnHandleResult rs = HR_OK;
 
-	return HR_OK;
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnHandShake(pSender, dwConnID);
+
+	if(rs != HR_ERROR)
+		SetRequestEvent(HSRP_DONE, FALSE);
+
+	return rs;
 }
 
 template<class T, USHORT default_port> EnHandleResult CHttpSyncClientT<T, default_port>::OnClose(ITcpClient* pSender, CONNID dwConnID, EnSocketOperation enOperation, int iErrorCode)
 {
+	EnHandleResult rs = HR_OK;
+
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnClose(pSender, dwConnID, enOperation, iErrorCode);
+
 	SetRequestEvent(HSRP_CLOSE);
 
-	return HR_OK;
-}
-
-template<class T, USHORT default_port> EnHttpParseResult CHttpSyncClientT<T, default_port>::OnHeadersComplete(IHttpClient* pSender, CONNID dwConnID)
-{
-	return HPR_OK;
+	return rs;
 }
 
 template<class T, USHORT default_port> EnHttpParseResult CHttpSyncClientT<T, default_port>::OnBody(IHttpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength)
 {
-	m_szBuffer.Cat(pData, iLength);
+	EnHttpParseResult rs = HPR_OK;
 
-	return HPR_OK;
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnBody(pSender, dwConnID, pData, iLength);
+
+	if(rs != HPR_ERROR)
+		m_szBuffer.Cat(pData, iLength);
+
+	return rs;
 }
 
 template<class T, USHORT default_port> EnHttpParseResult CHttpSyncClientT<T, default_port>::OnMessageComplete(IHttpClient* pSender, CONNID dwConnID)
 {
-	m_objHttp2.CopyData(m_objHttp);
+	EnHttpParseResult rs = HPR_OK;
 
-	if(GetUpgradeType() == HUT_NONE)
-		SetRequestEvent(HSRP_DONE);
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnMessageComplete(pSender, dwConnID);
 
-	return HPR_OK;
+	if(rs != HPR_ERROR)
+	{
+		if(GetUpgradeType() == HUT_NONE)
+			SetRequestEvent(HSRP_DONE);
+	}
+
+	return rs;
 }
 
 template<class T, USHORT default_port> EnHttpParseResult CHttpSyncClientT<T, default_port>::OnUpgrade(IHttpClient* pSender, CONNID dwConnID, EnHttpUpgradeType enUpgradeType)
 {
-	if(enUpgradeType == HUT_WEB_SOCKET)
+	EnHttpParseResult rs = HPR_OK;
+
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnUpgrade(pSender, dwConnID, enUpgradeType);
+
+	if(rs != HPR_ERROR)
 	{
-		SetRequestEvent(HSRP_DONE);
-		return HPR_OK;
+		if(enUpgradeType == HUT_WEB_SOCKET)
+		{
+			SetRequestEvent(HSRP_DONE);
+			rs = HPR_OK;
+		}
+		else
+		{
+			SetRequestEvent(HSRP_ERROR);
+			rs = HPR_ERROR;
+		}
 	}
-	else
-	{
-		SetRequestEvent(HSRP_ERROR);
-		return HPR_ERROR;
-	}
+
+	return rs;
 }
 
 template<class T, USHORT default_port> EnHttpParseResult CHttpSyncClientT<T, default_port>::OnParseError(IHttpClient* pSender, CONNID dwConnID, int iErrorCode, LPCSTR lpszErrorDesc)
 {
-	m_objHttp2.CopyData(m_objHttp);
+	EnHttpParseResult rs = HPR_OK;
+
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnParseError(pSender, dwConnID, iErrorCode, lpszErrorDesc);
+
 	SetRequestEvent(HSRP_ERROR);
 
-	return HPR_OK;
+	return rs;
 }
 
 template<class T, USHORT default_port> EnHandleResult CHttpSyncClientT<T, default_port>::OnWSMessageBody(IHttpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength)
 {
-	m_szBuffer.Cat(pData, iLength);
+	EnHandleResult rs = HR_OK;
 
-	return HR_OK;
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnWSMessageBody(pSender, dwConnID, pData, iLength);
+
+	if(rs != HR_ERROR)
+		m_szBuffer.Cat(pData, iLength);
+
+	return rs;
 }
 
 template<class T, USHORT default_port> EnHandleResult CHttpSyncClientT<T, default_port>::OnWSMessageComplete(IHttpClient* pSender, CONNID dwConnID)
 {
-	m_objHttp2.CopyWSContext(m_objHttp);
-	SetRequestEvent(HSRP_DONE);
+	EnHandleResult rs = HR_OK;
 
-	return HR_OK;
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnWSMessageComplete(pSender, dwConnID);
+
+	if(rs != HR_ERROR)
+		SetRequestEvent(HSRP_DONE);
+
+	return rs;
+}
+
+template<class T, USHORT default_port> EnHandleResult CHttpSyncClientT<T, default_port>::OnPrepareConnect(ITcpClient* pSender, CONNID dwConnID, SOCKET socket)
+{
+	EnHandleResult rs = HR_OK;
+
+	if(m_pListener2 != nullptr)
+		return m_pListener2->OnPrepareConnect(pSender, dwConnID, socket);
+
+	return rs;
+}
+
+template<class T, USHORT default_port> EnHandleResult CHttpSyncClientT<T, default_port>::OnConnect(ITcpClient* pSender, CONNID dwConnID)
+{
+	EnHandleResult rs = HR_OK;
+
+	if(m_pListener2 != nullptr)
+		return m_pListener2->OnConnect(pSender, dwConnID);
+
+	return rs;
+}
+
+template<class T, USHORT default_port> EnHandleResult CHttpSyncClientT<T, default_port>::OnSend(ITcpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength)
+{
+	EnHandleResult rs = HR_OK;
+
+	if(m_pListener2 != nullptr)
+		return m_pListener2->OnSend(pSender, dwConnID, pData, iLength);
+
+	return rs;
+}
+
+template<class T, USHORT default_port> EnHttpParseResult CHttpSyncClientT<T, default_port>::OnMessageBegin(IHttpClient* pSender, CONNID dwConnID)
+{
+	EnHttpParseResult rs = HPR_OK;
+
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnMessageBegin(pSender, dwConnID);
+
+	return rs;
+}
+
+template<class T, USHORT default_port> EnHttpParseResult CHttpSyncClientT<T, default_port>::OnStatusLine(IHttpClient* pSender, CONNID dwConnID, USHORT usStatusCode, LPCSTR lpszDesc)
+{
+	EnHttpParseResult rs = HPR_OK;
+
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnStatusLine(pSender, dwConnID, usStatusCode, lpszDesc);
+
+	return rs;
+}
+
+template<class T, USHORT default_port> EnHttpParseResult CHttpSyncClientT<T, default_port>::OnHeader(IHttpClient* pSender, CONNID dwConnID, LPCSTR lpszName, LPCSTR lpszValue)
+{
+	EnHttpParseResult rs = HPR_OK;
+
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnHeader(pSender, dwConnID, lpszName, lpszValue);
+
+	return rs;
+}
+
+template<class T, USHORT default_port> EnHttpParseResult CHttpSyncClientT<T, default_port>::OnHeadersComplete(IHttpClient* pSender, CONNID dwConnID)
+{
+	EnHttpParseResult rs = HPR_OK;
+
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnHeadersComplete(pSender, dwConnID);
+
+	return rs;
+}
+
+template<class T, USHORT default_port> EnHttpParseResult CHttpSyncClientT<T, default_port>::OnChunkHeader(IHttpClient* pSender, CONNID dwConnID, int iLength)
+{
+	EnHttpParseResult rs = HPR_OK;
+
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnChunkHeader(pSender, dwConnID, iLength);
+
+	return rs;
+}
+
+template<class T, USHORT default_port> EnHttpParseResult CHttpSyncClientT<T, default_port>::OnChunkComplete(IHttpClient* pSender, CONNID dwConnID)
+{
+	EnHttpParseResult rs = HPR_OK;
+
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnChunkComplete(pSender, dwConnID);
+
+	return rs;
+}
+
+template<class T, USHORT default_port> EnHandleResult CHttpSyncClientT<T, default_port>::OnWSMessageHeader(IHttpClient* pSender, CONNID dwConnID, BOOL bFinal, BYTE iReserved, BYTE iOperationCode, const BYTE lpszMask[4], ULONGLONG ullBodyLen)
+{
+	EnHandleResult rs = HR_OK;
+
+	if(m_pListener2 != nullptr)
+		rs = m_pListener2->OnWSMessageHeader(pSender, dwConnID, bFinal, iReserved, iOperationCode, lpszMask, ullBodyLen);
+
+	return rs;
 }
 
 // ------------------------------------------------------------------------------------------------------------- //

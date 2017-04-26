@@ -5,6 +5,20 @@ using System.Text;
 
 namespace HPSocketCS
 {
+
+    public class TcpPackAgent<T> : TcpPackAgent
+    {
+        public new T GetExtra(IntPtr connId)
+        {
+            return base.GetExtra<T>(connId);
+        }
+
+        public bool SetExtra(IntPtr connId, T obj)
+        {
+            return base.SetExtra(connId, obj);
+        }
+    }
+
     public class TcpPackAgent : TcpAgent
     {
         /// <summary>

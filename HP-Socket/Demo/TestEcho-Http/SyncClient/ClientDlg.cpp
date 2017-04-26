@@ -18,6 +18,15 @@ CClientDlg::CClientDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CClientDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+
+	VERIFY(g_SSL.Initialize(SSL_SM_CLIENT, SSL_VM_NONE, g_c_lpszPemCertFile, g_c_lpszPemKeyFile, g_c_lpszKeyPasswod, g_c_lpszCAPemCertFileOrPath));
+	VERIFY(g_CookieMgr.LoadFromFile(CT2A(g_lpszDefaultCookieFile), FALSE) || ::GetLastError() == ERROR_FILE_NOT_FOUND);
+}
+
+CClientDlg::~CClientDlg()
+{
+	g_CookieMgr.SaveToFile(CT2A(g_lpszDefaultCookieFile), TRUE);
+	g_SSL.Cleanup();
 }
 
 void CClientDlg::DoDataExchange(CDataExchange* pDX)
@@ -29,6 +38,8 @@ void CClientDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_PORT, m_Port);
 	DDX_Control(pDX, IDC_START, m_Start);
 	DDX_Control(pDX, IDC_STOP, m_Stop);
+	DDX_Control(pDX, IDC_USE_COOKIE, m_UseCookie);
+	DDX_Control(pDX, IDC_LISTENER, m_Listener);
 	DDX_Control(pDX, IDC_METHOD, m_Method);
 	DDX_Control(pDX, IDC_SCHEMA, m_Schema);
 	DDX_Control(pDX, IDC_PATH, m_Path);
@@ -71,11 +82,15 @@ BOOL CClientDlg::OnInitDialog()
 	m_Path.SetWindowText(DEFAULT_PATH);
 	m_Address.SetWindowText(DEFAULT_ADDRESS);
 	m_Port.SetWindowText(DEFAULT_PORT);
+	m_UseCookie.SetCheck(BST_CHECKED);
+	m_Listener.SetCheck(BST_CHECKED);
 
 	::SetMainWnd(this);
 	::SetInfoList(&m_Info);
 	SetAppState(ST_STOPPED);
 
+	m_bUseCookie = FALSE;
+	m_bListener	 = FALSE;
 	m_bWebSocket = FALSE;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -143,6 +158,8 @@ void CClientDlg::SetAppState(EnAppState state)
 	m_Start.EnableWindow(m_enState == ST_STOPPED);
 	m_Stop.EnableWindow(m_enState == ST_STARTED);
 	m_Send.EnableWindow(m_enState == ST_STARTED);
+	m_UseCookie.EnableWindow(m_enState == ST_STOPPED);
+	m_Listener.EnableWindow(m_enState == ST_STOPPED);
 	m_Schema.EnableWindow(m_enState == ST_STOPPED);
 	m_Address.EnableWindow(m_enState == ST_STOPPED);
 	m_Port.EnableWindow(m_enState == ST_STOPPED);
@@ -274,10 +291,11 @@ void CClientDlg::SendHttp()
 
 		::LogSend(dwConnID, strContent);
 
-		CheckSetCookie(m_pClient.get());
-
-		CStringA strSummary = GetHeaderSummary(m_pClient.get(), "    ", 0, TRUE);
-		::PostOnHeadersComplete(dwConnID, strSummary);
+		if(!m_bListener)
+		{
+			CStringA strSummary = GetHeaderSummary(m_pClient.get(), "    ", 0, TRUE);
+			::PostOnHeadersComplete(dwConnID, strSummary);
+		}
 
 		LPCBYTE pData	= nullptr;
 		int iLength		= 0;
@@ -286,7 +304,7 @@ void CClientDlg::SendHttp()
 
 		if(iLength > 0)
 		{
-			::PostOnBody(dwConnID, pData, iLength);
+			if(!m_bListener) ::PostOnBody(dwConnID, pData, iLength);
 
 			LPCSTR lpszEnc = m_pClient->GetContentEncoding();
 
@@ -308,7 +326,8 @@ void CClientDlg::SendHttp()
 				else
 				{
 					::PostUncompressBodyFail(dwConnID, rs);
-					::PostOnMessageComplete(dwConnID);
+
+					if(!m_bListener) ::PostOnMessageComplete(dwConnID);
 
 					OnBnClickedStop();
 					return;
@@ -316,13 +335,13 @@ void CClientDlg::SendHttp()
 			}
 		}
 
-		::PostOnMessageComplete(dwConnID);
+		if(!m_bListener) ::PostOnMessageComplete(dwConnID);
 
 		EnHttpUpgradeType enUpgrade = m_pClient->GetUpgradeType();
 
 		if(enUpgrade == HUT_WEB_SOCKET)
 		{
-			::PostOnUpgrade(dwConnID, enUpgrade);
+			if(!m_bListener) ::PostOnUpgrade(dwConnID, enUpgrade);
 
 			m_bWebSocket = TRUE;
 			OnCbnSelchangeMethod();
@@ -371,15 +390,17 @@ void CClientDlg::SendWebSocket()
 			ULONGLONG ullBodyLen;
 
 			VERIFY(m_pClient->GetWSMessageState(&bFinal, &iReserved, &iOperationCode, &lpszMask, &ullBodyLen, nullptr));
-			::PostOnWSMessageHeader(dwConnID, bFinal, iReserved, iOperationCode, lpszMask, ullBodyLen);
+
+			if(!m_bListener) ::PostOnWSMessageHeader(dwConnID, bFinal, iReserved, iOperationCode, lpszMask, ullBodyLen);
 
 			if(ullBodyLen > 0)
 			{
 				m_pClient->GetResponseBody((LPCBYTE*)&pData, &iLength);
-				::PostOnWSMessageBody(dwConnID, pData, iLength);
+
+				if(!m_bListener) ::PostOnWSMessageBody(dwConnID, pData, iLength);
 			}
 
-			::PostOnWSMessageComplete(dwConnID);
+			if(!m_bListener) ::PostOnWSMessageComplete(dwConnID);
 
 			if(iOperationCode == 0x8)
 				OnBnClickedStop();
@@ -409,15 +430,6 @@ void CClientDlg::OnBnClickedStart()
 {
 	SetAppState(ST_STARTING);
 
-	g_SSL.Cleanup();
-	if(!g_SSL.Initialize(SSL_SM_CLIENT, SSL_VM_NONE, g_c_lpszPemCertFile, g_c_lpszPemKeyFile, g_c_lpszKeyPasswod, g_c_lpszCAPemCertFileOrPath))
-	{
-		::LogClientStartFail(::GetLastError(), _T("initialize SSL env fail"));
-		SetAppState(ST_STOPPED);
-
-		return;
-	}
-
 	CString strAddress;
 	CString strPort;
 
@@ -427,18 +439,22 @@ void CClientDlg::OnBnClickedStart()
 	USHORT usPort	= (USHORT)_ttoi(strPort);
 	BOOL isHttp		= m_Schema.GetCurSel() == 0;
 
+	m_bUseCookie	= m_UseCookie.GetCheck() == BST_CHECKED;
+	m_bListener		= m_Listener.GetCheck() == BST_CHECKED;
+
 	if(isHttp)
-		m_pClient.reset((IHttpSyncClient*)(new CHttpSyncClient()));
+		m_pClient.reset((IHttpSyncClient*)(new CHttpSyncClient(m_bListener ? this : nullptr)));
 	else
-		m_pClient.reset((IHttpSyncClient*)(new CHttpsSyncClient()));
+		m_pClient.reset((IHttpSyncClient*)(new CHttpsSyncClient(m_bListener ? this : nullptr)));
+
+	m_pClient->SetUseCookie(m_bUseCookie);
 
 	::LogClientStarting(strAddress, usPort);
 
 	if(m_pClient->Start(strAddress, usPort))
 	{
-		::LogOnConnect3(m_pClient->GetConnectionID(), strAddress, usPort);
+		if(!m_bListener) ::LogOnConnect3(m_pClient->GetConnectionID(), strAddress, usPort);
 
-		m_pClient->AddCookie("__reqSequence", "1");
 		SetAppState(ST_STARTED);
 	}
 	else
@@ -458,7 +474,8 @@ void CClientDlg::OnBnClickedStop()
 	while(m_pClient->GetState() != SS_STOPPED)
 		::Sleep(50);
 
-	::PostOnClose(m_pClient->GetConnectionID());
+	if(!m_bListener) ::PostOnClose(m_pClient->GetConnectionID());
+
 	SetAppState(ST_STOPPED);
 }
 
@@ -530,7 +547,8 @@ BOOL CClientDlg::CheckStarted(BOOL bRestart)
 
 		if(bRestart)
 		{
-			::LogOnClose(m_pClient->GetConnectionID());
+			if(!m_bListener) ::LogOnClose(m_pClient->GetConnectionID());
+
 			OnBnClickedStart();
 		}
 
@@ -539,42 +557,13 @@ BOOL CClientDlg::CheckStarted(BOOL bRestart)
 
 	if(state == SS_STOPPED)
 	{
-		::PostOnClose(m_pClient->GetConnectionID());
+		if(!m_bListener) ::PostOnClose(m_pClient->GetConnectionID());
+
 		SetAppState(ST_STOPPED);
 		return FALSE;
 	}
 
 	return TRUE;
-}
-
-void CClientDlg::CheckSetCookie(IHttpSyncClient* pHttpClient)
-{
-	DWORD dwHeaderCount = 0;
-	pHttpClient->GetHeaders("Set-Cookie", nullptr, dwHeaderCount);
-
-	if(dwHeaderCount == 0)
-		return;
-
-	unique_ptr<LPCSTR[]> values(new LPCSTR[dwHeaderCount]);
-	VERIFY(pHttpClient->GetHeaders("Set-Cookie", values.get(), dwHeaderCount));
-
-	for(DWORD i = 0; i < dwHeaderCount; i++)
-	{
-		CStringA strValue = values[i];
-
-		int j = 0;
-		CStringA strItem = strValue.Tokenize("; ", j);
-
-		if(j <= 0)
-			continue;
-
-		int k = strItem.Find('=');
-
-		if(k <= 0)
-			continue;
-
-		pHttpClient->AddCookie(strItem.Left(k), strItem.Mid(k + 1));
-	}
 }
 
 CStringA CClientDlg::GetHeaderSummary(IHttpSyncClient* pHttpClient, LPCSTR lpszSep, int iSepCount, BOOL bWithContentLength)
@@ -642,4 +631,93 @@ CStringA CClientDlg::GetHeaderSummary(IHttpSyncClient* pHttpClient, LPCSTR lpszS
 	strResult.AppendFormat("%s%13s: %s%s", SEP2, "ContentType", pHttpClient->GetContentType(), CRLF);
  
 	return strResult;
+}
+
+EnHandleResult CClientDlg::OnConnect(ITcpClient* pSender, CONNID dwConnID)
+{
+	TCHAR szAddress[40];
+	int iAddressLen = sizeof(szAddress) / sizeof(TCHAR);
+	USHORT usPort;
+
+	pSender->GetRemoteHost(szAddress, iAddressLen, usPort);
+	::PostOnConnect2(dwConnID, szAddress, usPort);
+
+	return HR_OK;
+}
+
+EnHandleResult CClientDlg::OnClose(ITcpClient* pSender, CONNID dwConnID, EnSocketOperation enOperation, int iErrorCode)
+{
+	::PostOnClose(dwConnID);
+
+	return HR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnHeader(IHttpClient* pSender, CONNID dwConnID, LPCSTR lpszName, LPCSTR lpszValue)
+{
+	::PostOnHeader(dwConnID, lpszName, lpszValue);
+	return HPR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnHeadersComplete(IHttpClient* pSender, CONNID dwConnID)
+{
+	CStringA strSummary = GetHeaderSummary((IHttpSyncClient*)pSender, "    ", 0, TRUE);
+	::PostOnHeadersComplete(dwConnID, strSummary);
+
+	return HPR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnBody(IHttpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength)
+{
+	::PostOnBody(dwConnID, pData, iLength);
+
+	return HPR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnChunkHeader(IHttpClient* pSender, CONNID dwConnID, int iLength)
+{
+	::PostOnChunkHeader(dwConnID, iLength);
+
+	return HPR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnChunkComplete(IHttpClient* pSender, CONNID dwConnID)
+{
+	::PostOnChunkComplete(dwConnID);
+
+	return HPR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnMessageComplete(IHttpClient* pSender, CONNID dwConnID)
+{
+	::PostOnMessageComplete(dwConnID);
+
+	return HPR_OK;
+}
+
+EnHttpParseResult CClientDlg::OnUpgrade(IHttpClient* pSender, CONNID dwConnID, EnHttpUpgradeType enUpgradeType)
+{
+	::PostOnUpgrade(dwConnID, enUpgradeType);
+
+	return HPR_OK;
+}
+
+EnHandleResult CClientDlg::OnWSMessageHeader(IHttpClient* pSender, CONNID dwConnID, BOOL bFinal, BYTE iReserved, BYTE iOperationCode, const BYTE lpszMask[4], ULONGLONG ullBodyLen)
+{
+	::PostOnWSMessageHeader(dwConnID, bFinal, iReserved, iOperationCode, lpszMask, ullBodyLen);
+
+	return HR_OK;
+}
+
+EnHandleResult CClientDlg::OnWSMessageBody(IHttpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength)
+{
+	::PostOnWSMessageBody(dwConnID, pData, iLength);
+
+	return HR_OK;
+}
+
+EnHandleResult CClientDlg::OnWSMessageComplete(IHttpClient* pSender, CONNID dwConnID)
+{
+	::PostOnWSMessageComplete(dwConnID);
+
+	return HR_OK;
 }

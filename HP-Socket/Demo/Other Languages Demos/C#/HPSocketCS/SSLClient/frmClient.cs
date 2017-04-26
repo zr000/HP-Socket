@@ -47,8 +47,8 @@ namespace SSLClientNS
                 client = new HPSocketCS.SSLClient();
                 client.VerifyMode = SSLVerifyMode.Peer | SSLVerifyMode.FailIfNoPeerCert;
                 client.CAPemCertFileOrPath = "ssl-cert\\ca.crt";
-                client.PemCertFile = "ssl-cert\\server.cer";
-                client.PemKeyFile = "ssl-cert\\server.key";
+                client.PemCertFile = "ssl-cert\\client.cer";
+                client.PemKeyFile = "ssl-cert\\client.key";
                 client.KeyPasswod = "123456";
 
                 // 加个委托显示msg,因为on系列都是在工作线程中调用的,ui不允许直接操作

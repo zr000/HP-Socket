@@ -20,6 +20,19 @@ namespace HPSocketCS
         public delegate HandleResult OnHandShakeEventHandler(TcpClient sender);
     }
 
+    public class TcpClient<T> : TcpClient
+    {
+        public T GetExtra()
+        {
+            return base.GetExtra<T>();
+        }
+
+        public bool SetExtra(T obj)
+        {
+            return base.SetExtra(obj);
+        }
+    }
+
     public class TcpClient
     {
         protected IntPtr _pClient = IntPtr.Zero;
@@ -618,6 +631,17 @@ namespace HPSocketCS
                 return Sdk.HP_Client_GetConnectionID(pClient);
             }
 
+        }
+
+        /// <summary>
+        /// 检测是否为安全连接（SSL/HTTPS）
+        /// </summary>
+        public bool IsSecure
+        {
+            get
+            {
+                return Sdk.HP_Client_IsSecure(pClient);
+            }
         }
         ///////////////////////////////////////////////////////////////////////////////////////
 

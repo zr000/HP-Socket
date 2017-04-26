@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -32,36 +32,17 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const DWORD	MAX_WORKER_THREAD_COUNT					= 500;
-const DWORD	MIN_SOCKET_BUFFER_SIZE					= 64;
-const DWORD MAX_SMALL_FILE_SIZE						= 0x3FFFFF;
-const DWORD MAX_CONNECTION_PERIOD					= MAXLONG / 2;
-const DWORD	DEFAULT_MAX_CONNECTION_COUNT			= 10000;
-const DWORD	DEFAULT_WORKER_THREAD_COUNT				= min((::SysGetNumberOfProcessors() * 2 + 2), MAX_WORKER_THREAD_COUNT);
-const DWORD DEFAULT_FREE_SOCKETOBJ_LOCK_TIME		= 10 * 1000;
-const DWORD	DEFAULT_FREE_SOCKETOBJ_POOL				= 150;
-const DWORD	DEFAULT_FREE_SOCKETOBJ_HOLD				= 600;
-const DWORD	DEFAULT_FREE_BUFFEROBJ_POOL				= 300;
-const DWORD	DEFAULT_FREE_BUFFEROBJ_HOLD				= 1200;
-const DWORD DEFAULT_CLIENT_FREE_BUFFER_POOL_SIZE	= 10;
-const DWORD DEFAULT_CLIENT_FREE_BUFFER_POOL_HOLD	= 40;
-const DWORD	DEFAULT_TCP_SOCKET_BUFFER_SIZE			= ::SysGetPageSize();
-const DWORD	DEFALUT_TCP_KEEPALIVE_TIME				= 30 * 1000;
-const DWORD	DEFALUT_TCP_KEEPALIVE_INTERVAL			= 10 * 1000;
-const DWORD	DEFAULT_TCP_SERVER_SOCKET_LISTEN_QUEUE	= SOMAXCONN;
-const DWORD	DEFAULT_TCP_SERVER_ACCEPT_SOCKET_COUNT	= 300;
-const DWORD	DEFAULT_UDP_MAX_DATAGRAM_SIZE			= 1472;
-const DWORD	DEFAULT_UDP_POST_RECEIVE_COUNT			= 300;
-const DWORD DEFAULT_UDP_DETECT_ATTEMPTS				= 3;
-const DWORD DEFAULT_UDP_DETECT_INTERVAL				= 20;
-LPCTSTR DEFAULT_BIND_ADDRESS						= _T("0.0.0.0");
+DWORD GetDefaultWorkerThreadCount()
+{
+	static DWORD s_dwtc = min((::SysGetNumberOfProcessors() * 2 + 2), MAX_WORKER_THREAD_COUNT);
+	return s_dwtc;
+}
 
-const DWORD TCP_PACK_LENGTH_BITS					= 22;
-const DWORD TCP_PACK_LENGTH_MASK					= 0x3FFFFF;
-const DWORD TCP_PACK_MAX_SIZE_LIMIT					= 0x3FFFFF;
-const DWORD TCP_PACK_DEFAULT_MAX_SIZE				= 0x040000;
-const USHORT TCP_PACK_HEADER_FLAG_LIMIT				= 0x0003FF;
-const USHORT TCP_PACK_DEFAULT_HEADER_FLAG			= 0x000000;
+DWORD GetDefaultTcpSocketBufferSize()
+{
+	static DWORD s_dtsbs = ::SysGetPageSize();
+	return s_dtsbs;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 

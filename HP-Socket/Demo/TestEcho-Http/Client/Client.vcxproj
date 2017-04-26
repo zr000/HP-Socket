@@ -227,6 +227,7 @@
     <ClInclude Include="..\..\..\..\Common\Src\zlib\zutil.h" />
     <ClInclude Include="..\..\..\Src\HPTypeDef.h" />
     <ClInclude Include="..\..\..\Src\HttpClient.h" />
+    <ClInclude Include="..\..\..\Src\HttpCookie.h" />
     <ClInclude Include="..\..\..\Src\HttpHelper.h" />
     <ClInclude Include="..\..\..\Src\SocketInterface.h" />
     <ClInclude Include="..\..\..\Src\SSLClient.h" />
@@ -405,6 +406,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\..\Src\HttpClient.cpp" />
+    <ClCompile Include="..\..\..\Src\HttpCookie.cpp" />
     <ClCompile Include="..\..\..\Src\HttpHelper.cpp" />
     <ClCompile Include="..\..\..\Src\SSLClient.cpp" />
     <ClCompile Include="..\..\..\Src\SSLHelper.cpp" />

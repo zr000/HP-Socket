@@ -150,6 +150,10 @@ void PostInfoMsg(info_msg* msg);
 void LogInfoMsg(info_msg* pInfoMsg);
 void LogMsg(const CString& msg);
 
+extern LPCTSTR g_lpszDefaultCookieFile;
+
+LPCTSTR GetDefaultCookieFile();
+
 #ifdef _SSL_SUPPORT
 
 extern int g_c_iVerifyMode;

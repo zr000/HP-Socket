@@ -11,6 +11,18 @@ namespace HPSocketCS
         public delegate HandleResult OnReceiveEventHandler(TcpPullClient sender, int length);
     }
 
+    public class TcpPullClient<T> : TcpPullClient
+    {
+        public T GetExtra()
+        {
+            return base.GetExtra<T>();
+        }
+
+        public bool SetExtra(T obj)
+        {
+            return base.SetExtra(obj);
+        }
+    }
     public class TcpPullClient : TcpClient
     {
         /// <summary>

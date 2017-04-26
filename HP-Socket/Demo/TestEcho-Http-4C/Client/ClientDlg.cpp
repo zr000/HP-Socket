@@ -27,6 +27,9 @@ CClientDlg::CClientDlg(CWnd* pParent /*=NULL*/)
 	::HP_SSL_Initialize(SSL_SM_CLIENT, SSL_VM_NONE, g_c_lpszPemCertFile, g_c_lpszPemKeyFile, g_c_lpszKeyPasswod, g_c_lpszCAPemCertFileOrPath, nullptr);
 	VERIFY(::HP_SSL_IsValid());
 
+	// 加载 Cookie
+	VERIFY(::HP_HttpCookie_MGR_LoadFromFile(CT2A(g_lpszDefaultCookieFile), FALSE) || ::GetLastError() == ERROR_FILE_NOT_FOUND);
+
 	// 创建监听器对象
 	m_HttpClientListener = ::Create_HP_HttpClientListener();
 	m_HttpClient		 = nullptr;
@@ -63,6 +66,9 @@ CClientDlg::~CClientDlg()
 	// 销毁监听器对象
 	::Destroy_HP_HttpClientListener(m_HttpClientListener);
 
+	// 保存 Coookie
+	::HP_HttpCookie_MGR_SaveToFile(CT2A(g_lpszDefaultCookieFile), TRUE);
+
 	// 清理 SSL 全局运行环境
 	::HP_SSL_Cleanup();
 }
@@ -74,6 +80,7 @@ void CClientDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_INFO, m_Info);
 	DDX_Control(pDX, IDC_ADDRESS, m_Address);
 	DDX_Control(pDX, IDC_PORT, m_Port);
+	DDX_Control(pDX, IDC_USE_COOKIE, m_UseCookie);
 	DDX_Control(pDX, IDC_ASYNC, m_Async);
 	DDX_Control(pDX, IDC_START, m_Start);
 	DDX_Control(pDX, IDC_STOP, m_Stop);
@@ -119,6 +126,7 @@ BOOL CClientDlg::OnInitDialog()
 	m_Path.SetWindowText(DEFAULT_PATH);
 	m_Address.SetWindowText(DEFAULT_ADDRESS);
 	m_Port.SetWindowText(DEFAULT_PORT);
+	m_UseCookie.SetCheck(BST_CHECKED);
 	m_Async.SetCheck(BST_CHECKED);
 
 	::SetMainWnd(this);
@@ -126,6 +134,7 @@ BOOL CClientDlg::OnInitDialog()
 	SetAppState(ST_STOPPED);
 
 	m_bWebSocket = FALSE;
+	m_bUseCookie = FALSE;
 	m_bAsyncConn = FALSE;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -187,6 +196,7 @@ void CClientDlg::SetAppState(EnAppState state)
 	if(this->GetSafeHwnd() == nullptr)
 		return;
 
+	m_UseCookie.EnableWindow(m_enState == ST_STOPPED);
 	m_Async.EnableWindow(m_enState == ST_STOPPED);
 	m_Start.EnableWindow(m_enState == ST_STOPPED);
 	m_Stop.EnableWindow(m_enState == ST_STARTED);
@@ -352,8 +362,10 @@ void CClientDlg::OnBnClickedStart()
 
 
 	USHORT usPort	= (USHORT)_ttoi(strPort);
-	m_bAsyncConn	= m_Async.GetCheck();
 	BOOL isHttp		= m_Schema.GetCurSel() == 0;
+
+	m_bUseCookie	= m_UseCookie.GetCheck() == BST_CHECKED;
+	m_bAsyncConn	= m_Async.GetCheck() == BST_CHECKED;
 
 	if(m_HttpClient != nullptr)
 		::Destroy_HP_HttpClient(m_HttpClient);
@@ -362,6 +374,8 @@ void CClientDlg::OnBnClickedStart()
 		m_HttpClient = ::Create_HP_HttpClient(m_HttpClientListener);
 	else
 		m_HttpClient = ::Create_HP_HttpsClient(m_HttpClientListener);
+
+	::HP_HttpClient_SetUseCookie(m_HttpClient, m_bUseCookie);
 
 	::LogClientStarting(strAddress, usPort);
 
@@ -439,8 +453,6 @@ EnHandleResult CClientDlg::OnHandShake(HP_Client pSender, CONNID dwConnID)
 {
 	::PostOnHandShake(dwConnID);
 
-	::HP_HttpClient_AddCookie(pSender, "__reqSequence", "1", TRUE);
-
 	m_spThis->SetAppState(ST_STARTED);
 	return HR_OK;
 }
@@ -490,8 +502,6 @@ EnHttpParseResult CClientDlg::OnHeader(HP_HttpClient pSender, CONNID dwConnID, L
 
 EnHttpParseResult CClientDlg::OnHeadersComplete(HP_HttpClient pSender, CONNID dwConnID)
 {
-	CheckSetCookie(pSender);
-
 	CStringA strSummary = GetHeaderSummary(pSender, "    ", 0, TRUE);
 	::PostOnHeadersComplete(dwConnID, strSummary);
 
@@ -573,36 +583,6 @@ EnHandleResult CClientDlg::OnWSMessageComplete(HP_HttpClient pSender, CONNID dwC
 }
 
 // ------------------------------------------------------------------------------------------------------------- //
-
-void CClientDlg::CheckSetCookie(HP_HttpClient pSender)
-{
-	DWORD dwHeaderCount = 0;
-	::HP_HttpClient_GetHeaders(pSender, "Set-Cookie", nullptr, &dwHeaderCount);
-
-	if(dwHeaderCount == 0)
-		return;
-
-	unique_ptr<LPCSTR[]> values(new LPCSTR[dwHeaderCount]);
-	VERIFY(::HP_HttpClient_GetHeaders(pSender, "Set-Cookie", values.get(), &dwHeaderCount));
-
-	for(DWORD i = 0; i < dwHeaderCount; i++)
-	{
-		CStringA strValue = values[i];
-
-		int j = 0;
-		CStringA strItem = strValue.Tokenize("; ", j);
-
-		if(j <= 0)
-			continue;
-
-		int k = strItem.Find('=');
-
-		if(k <= 0)
-			continue;
-
-		::HP_HttpClient_AddCookie(pSender, strItem.Left(k), strItem.Mid(k + 1), TRUE);
-	}
-}
 
 CStringA CClientDlg::GetHeaderSummary(HP_HttpClient pSender, LPCSTR lpszSep, int iSepCount, BOOL bWithContentLength)
 {

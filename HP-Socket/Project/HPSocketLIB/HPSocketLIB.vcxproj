@@ -763,6 +763,7 @@
     <ClInclude Include="..\..\Src\HPTypeDef.h" />
     <ClInclude Include="..\..\Src\HttpAgent.h" />
     <ClInclude Include="..\..\Src\HttpClient.h" />
+    <ClInclude Include="..\..\Src\HttpCookie.h" />
     <ClInclude Include="..\..\Src\HttpHelper.h" />
     <ClInclude Include="..\..\Src\HttpServer.h" />
     <ClInclude Include="..\..\Src\MiscHelper.h" />
@@ -1377,6 +1378,7 @@
     <ClCompile Include="..\..\Src\HPSocket.cpp" />
     <ClCompile Include="..\..\Src\HttpAgent.cpp" />
     <ClCompile Include="..\..\Src\HttpClient.cpp" />
+    <ClCompile Include="..\..\Src\HttpCookie.cpp" />
     <ClCompile Include="..\..\Src\HttpHelper.cpp" />
     <ClCompile Include="..\..\Src\HttpServer.cpp" />
     <ClCompile Include="..\..\Src\MiscHelper.cpp" />

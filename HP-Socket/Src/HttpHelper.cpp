@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -27,21 +27,20 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const DWORD	MIN_HTTP_RELEASE_CHECK_INTERVAL		= 1000;
-const DWORD	MIN_HTTP_RELEASE_DELAY				= 100;
-const DWORD	MAX_HTTP_RELEASE_DELAY				= 60 * 1000;
-const DWORD	DEFAULT_HTTP_RELEASE_DELAY			= 3 * 1000;
-const EnHttpVersion DEFAULT_HTTP_VERSION		= HV_1_1;
-
-const DWORD DEFAULT_HTTP_SYNC_CONNECT_TIMEOUT	= 5000;
-const DWORD DEFAULT_HTTP_SYNC_REQUEST_TIMEOUT	= 10000;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
 CStringA& GetHttpVersionStr(EnHttpVersion enVersion, CStringA& strResult)
 {
 	strResult.Format("HTTP/%d.%d", LOBYTE(enVersion), HIBYTE(enVersion));
 	return strResult;
+}
+
+CStringA& AdjustRequestPath(LPCSTR lpszPath, CStringA& strPath)
+{
+	strPath = lpszPath;
+
+	if(strPath.IsEmpty() || strPath.GetAt(0) != HTTP_PATH_SEPARATOR_CHAR)
+		strPath.Insert(0, HTTP_PATH_SEPARATOR_CHAR);
+
+	return strPath;
 }
 
 LPCSTR GetHttpDefaultStatusCodeDesc(EnHttpStatusCode enCode)
@@ -136,13 +135,7 @@ void MakeRequestLine(LPCSTR lpszMethod, LPCSTR lpszPath, EnHttpVersion enVersion
 {
 	ASSERT(lpszMethod);
 
-	CStringA strMethod(lpszMethod);
-	strMethod.MakeUpper();
-
-	if(!lpszPath || lpszPath[0] == 0)
-		lpszPath = HTTP_PATH_SEPARATOR;
-
-	strValue.Format("%s %s HTTP/%d.%d%s", strMethod, lpszPath, LOBYTE(enVersion), HIBYTE(enVersion), HTTP_CRLF);
+	strValue.Format("%s %s HTTP/%d.%d%s", CStringA(lpszMethod).MakeUpper(), lpszPath, LOBYTE(enVersion), HIBYTE(enVersion), HTTP_CRLF);
 }
 
 void MakeStatusLine(EnHttpVersion enVersion, USHORT usStatusCode, LPCSTR lpszDesc, CStringA& strValue)
@@ -151,7 +144,7 @@ void MakeStatusLine(EnHttpVersion enVersion, USHORT usStatusCode, LPCSTR lpszDes
 	strValue.Format("HTTP/%d.%d %d %s%s", LOBYTE(enVersion), HIBYTE(enVersion), usStatusCode, lpszDesc, HTTP_CRLF);
 }
 
-void MakeHeaderLines(const THeader lpHeaders[], int iHeaderCount, const TCookieMap* pCookies, int iBodyLength, BOOL bRequest, LPCSTR lpszDefaultHost, USHORT usPort, CStringA& strValue)
+void MakeHeaderLines(const THeader lpHeaders[], int iHeaderCount, const TCookieMap* pCookies, int iBodyLength, BOOL bRequest, int iConnFlag, LPCSTR lpszDefaultHost, USHORT usPort, CStringA& strValue)
 {
 	unordered_set<LPCSTR, str_hash_func::hash, str_hash_func::equal_to> szHeaderNames;
 
@@ -173,8 +166,8 @@ void MakeHeaderLines(const THeader lpHeaders[], int iHeaderCount, const TCookieM
 		}
 	}
 
-	if(	(!bRequest || iBodyLength > 0)										&&
-		(szHeaderNames.empty()												||	
+	if(	(!bRequest || iBodyLength > 0)											&&
+		(szHeaderNames.empty()													||	
 		(szHeaderNames.find(HTTP_HEADER_CONTENT_LENGTH) == szHeaderNames.end()	&&
 		szHeaderNames.find(HTTP_HEADER_TRANSFER_ENCODING) == szHeaderNames.end())))
 	{
@@ -184,8 +177,16 @@ void MakeHeaderLines(const THeader lpHeaders[], int iHeaderCount, const TCookieM
 		AppendHeader(HTTP_HEADER_CONTENT_LENGTH, szBodyLength, strValue);
 	}
 
-	if(	bRequest && lpszDefaultHost && lpszDefaultHost[0] != 0		&&
-		(szHeaderNames.empty()										||	
+	if(	(iConnFlag == 0 || iConnFlag == 1)										&&
+		(szHeaderNames.empty()													||	
+		szHeaderNames.find(HTTP_HEADER_CONNECTION) == szHeaderNames.end()		))
+	{
+		LPCSTR lpszValue = iConnFlag == 0 ? HTTP_CONNECTION_CLOSE_VALUE : HTTP_CONNECTION_KEEPALIVE_VALUE;
+		AppendHeader(HTTP_HEADER_CONNECTION, lpszValue, strValue);
+	}
+
+	if(	bRequest && lpszDefaultHost && lpszDefaultHost[0] != 0			&&
+		(szHeaderNames.empty()											||	
 		(szHeaderNames.find(HTTP_HEADER_HOST) == szHeaderNames.end())	))
 	{
 		CStringA strHost(lpszDefaultHost);
@@ -210,11 +211,11 @@ void MakeHeaderLines(const THeader lpHeaders[], int iHeaderCount, const TCookieM
 			for(TCookieMapCI it = pCookies->begin(), end = pCookies->end(); it != end; ++it, ++dwIndex)
 			{
 				strValue.Append(it->first);
-				strValue.AppendChar(HTTP_NV_SEPARATOR_CHAR);
+				strValue.AppendChar(COOKIE_KV_SEP_CHAR);
 				strValue.Append(it->second);
 
 				if(dwIndex < dwSize - 1)
-					strValue.Append(HTTP_COOKIE_TOKENIZE);
+					strValue.Append(HTTP_COOKIE_SEPARATOR);
 			}
 
 			strValue.Append(HTTP_CRLF);

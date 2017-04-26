@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HttpService
+namespace HttpServerDemo
 {
     class Program
     {
@@ -15,10 +15,7 @@ namespace HttpService
                 ushort port = 8081;
                 Console.Title = port.ToString();
                 // http server
-                //new MyHttpServer().Run("0.0.0.0", port);
-
-                // websocket server
-                new MyWebSocketServer().Run("0.0.0.0", port);
+                new MyHttpServer().Run("0.0.0.0", port);
                 do
                 {
                     Console.WriteLine("输入quit退出!");

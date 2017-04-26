@@ -10,6 +10,18 @@ namespace HPSocketCS
     {
         public delegate HandleResult OnReceiveEventHandler(IntPtr connId, int length);
     }
+    public class TcpPullServer<T> : TcpPullServer
+    {
+        public new T GetExtra(IntPtr connId)
+        {
+            return base.GetExtra<T>(connId);
+        }
+
+        public bool SetExtra(IntPtr connId, T obj)
+        {
+            return base.SetExtra(connId, obj);
+        }
+    }
 
     public class TcpPullServer : TcpServer
     {

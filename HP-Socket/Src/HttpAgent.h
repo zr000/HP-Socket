@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -60,6 +60,9 @@ public:
 	virtual BOOL SendWSMessage(CONNID dwConnID, BOOL bFinal, BYTE iReserved, BYTE iOperationCode, const BYTE lpszMask[4] = nullptr, BYTE* pData = nullptr, int iLength = 0, ULONGLONG ullBodyLen = 0);
 
 public:
+	virtual void SetUseCookie(BOOL bUseCookie)					{m_pCookieMgr = bUseCookie ? &g_CookieMgr : nullptr;}
+	virtual BOOL IsUseCookie()									{return m_pCookieMgr != nullptr;}
+
 	virtual void SetLocalVersion(EnHttpVersion enLocalVersion)	{m_enLocalVersion = enLocalVersion;}
 	virtual EnHttpVersion GetLocalVersion()						{return m_enLocalVersion;}
 
@@ -80,9 +83,6 @@ public:
 
 	virtual BOOL GetCookie(CONNID dwConnID, LPCSTR lpszName, LPCSTR* lpszValue);
 	virtual BOOL GetAllCookies(CONNID dwConnID, TCookie lpCookies[], DWORD& dwCount);
-	virtual BOOL AddCookie(CONNID dwConnID, LPCSTR lpszName, LPCSTR lpszValue, BOOL bRelpace = TRUE);
-	virtual BOOL DeleteCookie(CONNID dwConnID, LPCSTR lpszName);
-	virtual BOOL DeleteAllCookies(CONNID dwConnID);
 
 	virtual USHORT GetStatusCode(CONNID dwConnID);
 
@@ -132,10 +132,14 @@ private:
 	inline THttpObj* FindHttpObj(CONNID dwConnID);
 	inline THttpObj* FindHttpObj(TSocketObj* pSocketObj);
 
+	CCookieMgr* GetCookieMgr()						{return m_pCookieMgr;}
+	LPCSTR GetRemoteDomain(TSocketObj* pSocketObj)	{LPCSTR lpszDomain; pSocketObj->GetRemoteHost(&lpszDomain); return lpszDomain;}
+
 public:
 	CHttpAgentT(IHttpAgentListener* pListener)
 	: T					(pListener)
 	, m_pListener		(pListener)
+	, m_pCookieMgr		(&g_CookieMgr)
 	, m_enLocalVersion	(DEFAULT_HTTP_VERSION)
 	{
 
@@ -148,6 +152,7 @@ public:
 
 private:
 	IHttpAgentListener*	m_pListener;
+	CCookieMgr*			m_pCookieMgr;
 	EnHttpVersion		m_enLocalVersion;
 
 	CHttpObjPool		m_objPool;

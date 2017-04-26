@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 2.3.17
+ * Version	: 2.3.18
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -373,10 +373,10 @@ TBuffer* CBufferPool::PickFreeBuffer(ULONG_PTR dwID)
 	if(m_lsFreeBuffer.TryLock(&pBuffer, dwIndex))
 	{
 		if(::GetTimeGap32(pBuffer->freeTime) >= m_dwBufferLockTime)
-			m_lsFreeBuffer.ReleaseLock(nullptr, dwIndex);
+			VERIFY(m_lsFreeBuffer.ReleaseLock(nullptr, dwIndex));
 		else
 		{
-			m_lsFreeBuffer.ReleaseLock(pBuffer, dwIndex);
+			VERIFY(m_lsFreeBuffer.ReleaseLock(pBuffer, dwIndex));
 			pBuffer = nullptr;
 		}
 	}

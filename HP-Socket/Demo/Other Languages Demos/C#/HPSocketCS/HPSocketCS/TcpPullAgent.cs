@@ -9,6 +9,20 @@ namespace HPSocketCS
     {
         public delegate HandleResult OnReceiveEventHandler(IntPtr connId, int length);
     }
+
+    public class TcpPullAgent<T> : TcpPullAgent
+    {
+        public new T GetExtra(IntPtr connId)
+        {
+            return base.GetExtra<T>(connId);
+        }
+
+        public bool SetExtra(IntPtr connId, T obj)
+        {
+            return base.SetExtra(connId, obj);
+        }
+    }
+
     public class TcpPullAgent : TcpAgent
     {
         protected new TcpPullAgentEvent.OnReceiveEventHandler OnReceive;

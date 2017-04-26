@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -90,18 +90,12 @@ template<class T, class _Listener, class _Creator> class CHPSocketPtr
 public:
 	CHPSocketPtr(_Listener* pListener)
 	{
-		if(pListener)
-			m_pObj = _Creator::Create(pListener);
-		else
-			m_pObj = nullptr;
+		m_pObj = _Creator::Create(pListener);
 	}
 
-	CHPSocketPtr(BOOL bCreate = TRUE)
+	CHPSocketPtr() : m_pObj(nullptr)
 	{
-		if(bCreate)
-			m_pObj = _Creator::Create();
-		else
-			m_pObj = nullptr;
+
 	}
 
 	~CHPSocketPtr()
@@ -408,7 +402,7 @@ HPSOCKET_API IHttpAgent* HP_Create_HttpAgent(IHttpAgentListener* pListener);
 // 创建 IHttpClient 对象
 HPSOCKET_API IHttpClient* HP_Create_HttpClient(IHttpClientListener* pListener);
 // 创建 IHttpSyncClient 对象
-HPSOCKET_API IHttpSyncClient* HP_Create_HttpSyncClient();
+HPSOCKET_API IHttpSyncClient* HP_Create_HttpSyncClient(IHttpClientListener* pListener);
 
 // 销毁 IHttpServer 对象
 HPSOCKET_API void HP_Destroy_HttpServer(IHttpServer* pServer);
@@ -464,9 +458,9 @@ struct HttpClient_Creator
 // IHttpSyncClient 对象创建器
 struct HttpSyncClient_Creator
 {
-	static IHttpSyncClient* Create()
+	static IHttpSyncClient* Create(IHttpClientListener* pListener)
 	{
-		return HP_Create_HttpSyncClient();
+		return HP_Create_HttpSyncClient(pListener);
 	}
 
 	static void Destroy(IHttpSyncClient* pClient)
@@ -476,13 +470,46 @@ struct HttpSyncClient_Creator
 };
 
 // IHttpServer 对象智能指针
-typedef CHPSocketPtr<IHttpServer, IHttpServerListener, HttpServer_Creator>		CHttpServerPtr;
+typedef CHPSocketPtr<IHttpServer, IHttpServerListener, HttpServer_Creator>			CHttpServerPtr;
 // IHttpAgent 对象智能指针
-typedef CHPSocketPtr<IHttpAgent, IHttpAgentListener, HttpAgent_Creator>			CHttpAgentPtr;
+typedef CHPSocketPtr<IHttpAgent, IHttpAgentListener, HttpAgent_Creator>				CHttpAgentPtr;
 // IHttpClient 对象智能指针
-typedef CHPSocketPtr<IHttpClient, IHttpClientListener, HttpClient_Creator>		CHttpClientPtr;
+typedef CHPSocketPtr<IHttpClient, IHttpClientListener, HttpClient_Creator>			CHttpClientPtr;
 // IHttpSyncClient 对象智能指针
-typedef CHPSocketPtr<IHttpSyncClient, BOOL, HttpSyncClient_Creator>				CHttpSyncClientPtr;
+typedef CHPSocketPtr<IHttpSyncClient, IHttpClientListener, HttpSyncClient_Creator>	CHttpSyncClientPtr;
+
+/**************************************************************************/
+/*************************** HTTP Cookie 管理方法 **************************/
+
+/* 从文件加载 Cookie */
+HPSOCKET_API BOOL HP_HttpCookie_MGR_LoadFromFile(LPCSTR lpszFile, BOOL bKeepExists = TRUE);
+/* 保存 Cookie 到文件 */
+HPSOCKET_API BOOL HP_HttpCookie_MGR_SaveToFile(LPCSTR lpszFile, BOOL bKeepExists = TRUE);
+/* 清理 Cookie */
+HPSOCKET_API BOOL HP_HttpCookie_MGR_ClearCookies(LPCSTR lpszDomain = nullptr, LPCSTR lpszPath = nullptr);
+/* 清理过期 Cookie */
+HPSOCKET_API BOOL HP_HttpCookie_MGR_RemoveExpiredCookies(LPCSTR lpszDomain = nullptr, LPCSTR lpszPath = nullptr);
+/* 设置 Cookie */
+HPSOCKET_API BOOL HP_HttpCookie_MGR_SetCookie(LPCSTR lpszName, LPCSTR lpszValue, LPCSTR lpszDomain, LPCSTR lpszPath, int iMaxAge = -1, BOOL bHttpOnly = FALSE, BOOL bSecure = FALSE, int enSameSite = 0, BOOL bOnlyUpdateValueIfExists = TRUE);
+/* 删除 Cookie */
+HPSOCKET_API BOOL HP_HttpCookie_MGR_DeleteCookie(LPCSTR lpszDomain, LPCSTR lpszPath, LPCSTR lpszName);
+/* 设置是否允许第三方 Cookie */
+HPSOCKET_API void HP_HttpCookie_MGR_SetEnableThirdPartyCookie(BOOL bEnableThirdPartyCookie = TRUE);
+/* 检查是否允许第三方 Cookie */
+HPSOCKET_API BOOL HP_HttpCookie_MGR_IsEnableThirdPartyCookie();
+
+/* Cookie expires 字符串转换为整数 */
+HPSOCKET_API BOOL HP_HttpCookie_HLP_ParseExpires(LPCSTR lpszExpires, __time64_t& tmExpires);
+/* 整数转换为 Cookie expires 字符串 */
+HPSOCKET_API BOOL HP_HttpCookie_HLP_MakeExpiresStr(char lpszBuff[], int& iBuffLen, __time64_t tmExpires);
+/* 生成 Cookie 字符串 */
+HPSOCKET_API BOOL HP_HttpCookie_HLP_ToString(char lpszBuff[], int& iBuffLen, LPCSTR lpszName, LPCSTR lpszValue, LPCSTR lpszDomain, LPCSTR lpszPath, int iMaxAge /*= -1*/, BOOL bHttpOnly /*= FALSE*/, BOOL bSecure /*= FALSE*/, int enSameSite /*= 0*/);
+/* 获取当前 UTC 时间 */
+HPSOCKET_API __time64_t HP_HttpCookie_HLP_CurrentUTCTime();
+/* Max-Age -> expires */
+HPSOCKET_API __time64_t HP_HttpCookie_HLP_MaxAgeToExpires(int iMaxAge);
+/* expires -> Max-Age */
+HPSOCKET_API int HP_HttpCookie_HLP_ExpiresToMaxAge(__time64_t tmExpires);
 
 /*****************************************************************************************************************************************************/
 /*************************************************************** Global Function Exports *************************************************************/

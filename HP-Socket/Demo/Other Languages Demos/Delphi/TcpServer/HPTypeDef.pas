@@ -9,6 +9,7 @@ type
     名称：连接 ID 数据类型
     描述：定义连接 ID 的数据类型
     ************************************************************************/ }
+  CONNID  = LongWord;
   HP_CONNID = LongWord;
   PHP_CONNID = ^HP_CONNID;
   HP_CONNIDArray = array of HP_CONNID; { TODO : 这个数组变量用来获取所有连接id }
@@ -105,6 +106,46 @@ type
     CM_MULTICAST = 0, // 组播
     CM_BROADCAST = 1 // 广播
     );
+
+{/************************************************************************
+名称：SSL 工作模式
+描述：标识 SSL 的工作模式，客户端模式或服务端模式
+************************************************************************/}
+ En_HP_SSLSessionMode   =
+(
+	SSL_SM_CLIENT	= 0,	// 客户端模式
+	SSL_SM_SERVER	= 1	// 服务端模式
+);
+
+{/************************************************************************
+名称：SSL 验证模式
+描述：SSL 验证模式选项，SSL_VM_PEER 可以和后面两个选项组合一起
+************************************************************************/}
+  En_HP_SSLVerifyMode =
+(
+	SSL_VM_NONE					= $00,	// SSL_VERIFY_NONE
+	SSL_VM_PEER					= $01,	// SSL_VERIFY_PEER
+	SSL_VM_FAIL_IF_NO_PEER_CERT	= $02,	// SSL_VERIFY_FAIL_IF_NO_PEER_CERT
+	SSL_VM_CLIENT_ONCE			= $04	// SSL_VERIFY_CLIENT_ONCE
+);
+
+{/************************************************************************
+名称：SNI 服务名称回调函数
+描述：根据服务器名称选择 SSL 证书
+参数：
+		lpszServerName -- 服务器名称（域名）
+
+返回值：
+		0	 -- 成功，使用默认 SSL 证书
+		正数	 -- 成功，使用返回值对应的 SNI 主机证书
+		负数	 -- 失败，中断 SSL 握手
+
+************************************************************************/}
+type Fn_SNI_ServerNameCallback  =function(lpszServerName: PAnsiChar): Integer;  stdcall;
+
+type HP_Fn_SNI_ServerNameCallback = Fn_SNI_ServerNameCallback;
+
+
 {/************************************************************************
 名称：HTTP 版本
 描述：低字节：主版本号，高字节：次版本号
@@ -160,65 +201,75 @@ type
 ************************************************************************/}
   En_HP_HttpStatusCode = (
 
-    HSC_CONTINUE						= 100,
-    HSC_SWITCHING_PROTOCOLS				= 101,
-    HSC_PROCESSING						= 102,
+	HSC_CONTINUE						= 100,
+	HSC_SWITCHING_PROTOCOLS				= 101,
+	HSC_PROCESSING						= 102,
 
-    HSC_OK								= 200,
-    HSC_CREATED							= 201,
-    HSC_ACCEPTED						= 202,
-    HSC_NON_AUTHORITATIVE_INFORMATION	= 203,
-    HSC_NO_CONTENT						= 204,
-    HSC_RESET_CONTENT					= 205,
-    HSC_PARTIAL_CONTENT					= 206,
-    HSC_MULTI_STATUS					= 207,
+	HSC_OK								= 200,
+	HSC_CREATED							= 201,
+	HSC_ACCEPTED						= 202,
+	HSC_NON_AUTHORITATIVE_INFORMATION	= 203,
+	HSC_NO_CONTENT						= 204,
+	HSC_RESET_CONTENT					= 205,
+	HSC_PARTIAL_CONTENT					= 206,
+	HSC_MULTI_STATUS					= 207,
+	HSC_ALREADY_REPORTED				= 208,
+	HSC_IM_USED							= 226,
 
-    HSC_MULTIPLE_CHOICES				= 300,
-    HSC_MOVED_PERMANENTLY				= 301,
-    HSC_MOVED_TEMPORARILY				= 302,
-    HSC_SEE_OTHER						= 303,
-    HSC_NOT_MODIFIED					= 304,
-    HSC_USE_PROXY						= 305,
-    HSC_SWITCH_PROXY					= 306,
-    HSC_TEMPORARY_REDIRECT				= 307,
+	HSC_MULTIPLE_CHOICES				= 300,
+	HSC_MOVED_PERMANENTLY				= 301,
+	HSC_MOVED_TEMPORARILY				= 302,
+	HSC_SEE_OTHER						= 303,
+	HSC_NOT_MODIFIED					= 304,
+	HSC_USE_PROXY						= 305,
+	HSC_SWITCH_PROXY					= 306,
+	HSC_TEMPORARY_REDIRECT				= 307,
+	HSC_PERMANENT_REDIRECT				= 308,
 
-    HSC_BAD_REQUEST						= 400,
-    HSC_UNAUTHORIZED					= 401,
-    HSC_PAYMENT_REQUIRED				= 402,
-    HSC_FORBIDDEN						= 403,
-    HSC_NOT_FOUND						= 404,
-    HSC_METHOD_NOT_ALLOWED				= 405,
-    HSC_NOT_ACCEPTABLE					= 406,
-    HSC_PROXY_AUTHENTICATION_REQUIRED	= 407,
-    HSC_REQUEST_TIMEOUT					= 408,
-    HSC_CONFLICT						= 409,
-    HSC_GONE							= 410,
-    HSC_LENGTH_REQUIRED					= 411,
-    HSC_PRECONDITION_FAILED				= 412,
-    HSC_REQUEST_ENTITY_TOO_LARGE		= 413,
-    HSC_REQUEST_URI_TOO_LONG			= 414,
-    HSC_UNSUPPORTED_MEDIA_TYPE			= 415,
-    HSC_REQUESTED_RANGE_NOT_SATISFIABLE	= 416,
-    HSC_EXPECTATION_FAILED				= 417,
-    HSC_UNPROCESSABLE_ENTITY			= 422,
-    HSC_LOCKED							= 423,
-    HSC_FAILED_DEPENDENCY				= 424,
-    HSC_UNORDERED_COLLECTION			= 425,
-    HSC_UPGRADE_REQUIRED				= 426,
-    HSC_RETRY_WITH						= 449,
+	HSC_BAD_REQUEST						= 400,
+	HSC_UNAUTHORIZED					= 401,
+	HSC_PAYMENT_REQUIRED				= 402,
+	HSC_FORBIDDEN						= 403,
+	HSC_NOT_FOUND						= 404,
+	HSC_METHOD_NOT_ALLOWED				= 405,
+	HSC_NOT_ACCEPTABLE					= 406,
+	HSC_PROXY_AUTHENTICATION_REQUIRED	= 407,
+	HSC_REQUEST_TIMEOUT					= 408,
+	HSC_CONFLICT						= 409,
+	HSC_GONE							= 410,
+	HSC_LENGTH_REQUIRED					= 411,
+	HSC_PRECONDITION_FAILED				= 412,
+	HSC_REQUEST_ENTITY_TOO_LARGE		= 413,
+	HSC_REQUEST_URI_TOO_LONG			= 414,
+	HSC_UNSUPPORTED_MEDIA_TYPE			= 415,
+	HSC_REQUESTED_RANGE_NOT_SATISFIABLE	= 416,
+	HSC_EXPECTATION_FAILED				= 417,
+	HSC_MISDIRECTED_REQUEST				= 421,
+	HSC_UNPROCESSABLE_ENTITY			= 422,
+	HSC_LOCKED							= 423,
+	HSC_FAILED_DEPENDENCY				= 424,
+	HSC_UNORDERED_COLLECTION			= 425,
+	HSC_UPGRADE_REQUIRED				= 426,
+	HSC_PRECONDITION_REQUIRED			= 428,
+	HSC_TOO_MANY_REQUESTS				= 429,
+	HSC_REQUEST_HEADER_FIELDS_TOO_LARGE	= 431,
+	HSC_UNAVAILABLE_FOR_LEGAL_REASONS	= 451,
+	HSC_RETRY_WITH						= 449,
 
-    HSC_INTERNAL_SERVER_ERROR			= 500,
-    HSC_NOT_IMPLEMENTED					= 501,
-    HSC_BAD_GATEWAY						= 502,
-    HSC_SERVICE_UNAVAILABLE				= 503,
-    HSC_GATEWAY_TIMEOUT					= 504,
-    HSC_HTTP_VERSION_NOT_SUPPORTED		= 505,
-    HSC_VARIANT_ALSO_NEGOTIATES			= 506,
-    HSC_INSUFFICIENT_STORAGE			= 507,
-    HSC_BANDWIDTH_LIMIT_EXCEEDED		= 509,
-    HSC_NOT_EXTENDED					= 510,
+	HSC_INTERNAL_SERVER_ERROR			= 500,
+	HSC_NOT_IMPLEMENTED					= 501,
+	HSC_BAD_GATEWAY						= 502,
+	HSC_SERVICE_UNAVAILABLE				= 503,
+	HSC_GATEWAY_TIMEOUT					= 504,
+	HSC_HTTP_VERSION_NOT_SUPPORTED		= 505,
+	HSC_VARIANT_ALSO_NEGOTIATES			= 506,
+	HSC_INSUFFICIENT_STORAGE			= 507,
+	HSC_LOOP_DETECTED					= 508,
+	HSC_BANDWIDTH_LIMIT_EXCEEDED		= 509,
+	HSC_NOT_EXTENDED					= 510,
+	HSC_NETWORK_AUTHENTICATION_REQUIRED	= 511,
 
-    HSC_UNPARSEABLE_RESPONSE_HEADERS	= 600
+	HSC_UNPARSEABLE_RESPONSE_HEADERS	= 600
   );
 
 {/************************************************************************
@@ -226,8 +277,8 @@ type
 描述：字符串名值对结构体
 ************************************************************************/}
   WSABUF = Record
-    name: PChar; { the length of the buffer }
-    value: PChar; { the pointer to the buffer }
+    name: PAnsiChar; { the length of the buffer }
+    value: PAnsiChar; { the pointer to the buffer }
   end { WSABUF };
   TNVPair = array of WSABUF;
   

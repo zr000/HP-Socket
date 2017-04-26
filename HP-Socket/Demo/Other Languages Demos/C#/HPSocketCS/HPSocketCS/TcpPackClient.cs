@@ -5,6 +5,18 @@ using System.Text;
 
 namespace HPSocketCS
 {
+    public class TcpPackClient<T> : TcpPackClient
+    {
+        public T GetExtra()
+        {
+            return base.GetExtra<T>();
+        }
+
+        public bool SetExtra(T obj)
+        {
+            return base.SetExtra(obj);
+        }
+    }
     public class TcpPackClient : TcpClient
     {
 

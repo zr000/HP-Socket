@@ -270,12 +270,12 @@ namespace HPSocketCS
         /// <param name="headers">回复请求头</param>
         /// <param name="body">回复请求体</param>
         /// <returns></returns>
-        public bool SendResponse(IntPtr connId, HttpStatusCode httpStatusCode, string desc, THeader[] headers, string body)
+        public bool SendResponse(IntPtr connId, HttpStatusCode httpStatusCode, string desc, THeader[] headers, byte[] body, int bodyLength)
         {
-            int bodyLength = body == null ? 0 : body.Length;
             int headersLength = headers == null ? 0 : headers.Length;
             return HttpSdk.HP_HttpServer_SendResponse(pServer, connId, (ushort)httpStatusCode, desc, headers, headersLength, body, bodyLength);
         }
+        
 
         /// <summary>
         /// 名称：发送本地文件

@@ -829,6 +829,15 @@ public class Sdk
     public static extern bool HP_Server_GetConnectionExtra(IntPtr pServer, IntPtr connId, ref IntPtr pExtra);
 
     /// <summary>
+    /// 检测是否为安全连接（SSL/HTTPS）
+    /// </summary>
+    /// <param name="pServer"></param>
+    /// <returns></returns>
+    [DllImport(HPSOCKET_DLL_PATH)]
+    public static extern bool HP_Server_IsSecure(IntPtr pServer);
+
+
+    /// <summary>
     /// 检查通信组件是否已启动
     /// </summary>
     /// <param name="pServer"></param>
@@ -1357,6 +1366,15 @@ public class Sdk
 
 
     /// <summary>
+    /// 检测是否为安全连接（SSL/HTTPS）
+    /// </summary>
+    /// <param name="pClient"></param>
+    /// <returns></returns>
+    [DllImport(HPSOCKET_DLL_PATH)]
+    public static extern bool HP_Client_IsSecure(IntPtr pClient);
+
+
+    /// <summary>
     /// 检查通信组件是否已启动
     /// </summary>
     /// <param name="pClient"></param>
@@ -1761,6 +1779,14 @@ public class Sdk
     /// <returns></returns>
     [DllImport(HPSOCKET_DLL_PATH)]
     public static extern bool HP_Agent_GetConnectionExtra(IntPtr pAgent, IntPtr connId, ref IntPtr pExtra);
+
+    /// <summary>
+    /// 检测是否为安全连接（SSL/HTTPS）
+    /// </summary>
+    /// <param name="pAgent"></param>
+    /// <returns></returns>
+    [DllImport(HPSOCKET_DLL_PATH)]
+    public static extern bool HP_Agent_IsSecure(IntPtr pAgent);
 
     /// <summary>
     /// 检查通信组件是否已启动

@@ -448,15 +448,35 @@ EnHttpParseResult CServerDlg::OnMessageComplete(HP_HttpServer pSender, HP_CONNID
 	strContentLength.Format("%u", iBodyLength);
 
 	DWORD dwSeq				= 1;
+	int iSize				= MAX_PATH;
 	LPCSTR lpszReqSequence	= nullptr;
+	CStringA strSeq;
 
-	if(::HP_HttpServer_GetCookie(pSender, dwConnID, "__reqSequence", &lpszReqSequence))
+	if(::HP_HttpServer_GetCookie(pSender, dwConnID, "__reqSequence_1", &lpszReqSequence))
 		dwSeq += atoi(lpszReqSequence);
 
-	CStringA strSeqCookie;
-	strSeqCookie.Format("__reqSequence=%u; path=/", dwSeq);
+	strSeq.Format("%u", dwSeq);
 
-	THeader header[] = {{"Content-Type", "text/plain"}, {"Content-Length", strContentLength}, {"Set-Cookie", strSeqCookie}};
+	CStringA strSeqCookie1;
+	LPSTR lpszSeqCookie = strSeqCookie1.GetBuffer(iSize);
+	VERIFY(::HP_HttpCookie_HLP_ToString(lpszSeqCookie, &iSize, "__reqSequence_1", strSeq, nullptr, nullptr, -1, TRUE, TRUE, 2));
+	strSeqCookie1.ReleaseBuffer();
+
+	dwSeq			= 1;
+	iSize			= MAX_PATH;
+	lpszReqSequence	= nullptr;
+
+	if(::HP_HttpServer_GetCookie(pSender, dwConnID, "__reqSequence_2", &lpszReqSequence))
+		dwSeq += atoi(lpszReqSequence);
+
+	strSeq.Format("%u", dwSeq);
+
+	CStringA strSeqCookie2;
+	lpszSeqCookie = strSeqCookie2.GetBuffer(iSize);
+	VERIFY(::HP_HttpCookie_HLP_ToString(lpszSeqCookie, &iSize, "__reqSequence_2", strSeq, nullptr, "/", 300, FALSE, FALSE, 0));
+	strSeqCookie2.ReleaseBuffer();
+
+	THeader header[] = {{"Content-Type", "text/plain"}, {"Content-Length", strContentLength}, {"Set-Cookie", strSeqCookie1}, {"Set-Cookie", strSeqCookie2}};
 	int iHeaderCount = sizeof(header) / sizeof(THeader);
 
 	if(bSkipBody)

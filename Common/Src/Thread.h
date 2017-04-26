@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 2.3.17
+ * Version	: 2.3.18
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -60,7 +60,7 @@ public:
 
 			if(!IsValid())
 			{
-				::SetLastError(_doserrno);
+				::SetLastError(ERROR_CREATE_FAILED);
 				isOK = FALSE;
 			}
 		}

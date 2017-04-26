@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HPSocketCS", "HPSocketCS\HPSocketCS.csproj", "{DFA935E2-CF37-4E26-B697-D7F3DEE19DD8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TcpPullClient", "TcpPullClient\TcpPullClient.csproj", "{B9965E66-853A-47CC-B0C9-197B5A29ABFC}"
@@ -30,6 +32,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TcpPortForwarding", "TcpPortForwarding\TcpPortForwarding.csproj", "{53C19B7D-9590-49FA-81BC-59ECC820F349}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpServer", "HttpServer\HttpServer.csproj", "{B39F04B9-17B1-4351-B411-D5CCE39627CE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSocketServer", "WebSocketServer\WebSocketServer.csproj", "{00E2BFEE-3896-4647-A5A2-046218F09477}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -255,6 +259,20 @@ Global
 		{B39F04B9-17B1-4351-B411-D5CCE39627CE}.Release|x64.Build.0 = Release|x64
 		{B39F04B9-17B1-4351-B411-D5CCE39627CE}.Release|x86.ActiveCfg = Release|x86
 		{B39F04B9-17B1-4351-B411-D5CCE39627CE}.Release|x86.Build.0 = Release|x86
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Debug|x64.ActiveCfg = Debug|x64
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Debug|x64.Build.0 = Debug|x64
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Debug|x86.ActiveCfg = Debug|x86
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Debug|x86.Build.0 = Debug|x86
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Release|Any CPU.ActiveCfg = Release|x86
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Release|Mixed Platforms.Build.0 = Release|x86
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Release|x64.ActiveCfg = Release|x64
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Release|x64.Build.0 = Release|x64
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Release|x86.ActiveCfg = Release|x86
+		{00E2BFEE-3896-4647-A5A2-046218F09477}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

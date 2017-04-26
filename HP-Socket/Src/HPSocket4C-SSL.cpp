@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -63,7 +63,7 @@
 	#pragma comment(linker, "/EXPORT:Create_HP_HttpsAgent=_Create_HP_HttpsAgent@4")
 	#pragma comment(linker, "/EXPORT:Create_HP_HttpsClient=_Create_HP_HttpsClient@4")
 	#pragma comment(linker, "/EXPORT:Create_HP_HttpsServer=_Create_HP_HttpsServer@4")
-	#pragma comment(linker, "/EXPORT:Create_HP_HttpsSyncClient=_Create_HP_HttpsSyncClient@0")
+	#pragma comment(linker, "/EXPORT:Create_HP_HttpsSyncClient=_Create_HP_HttpsSyncClient@4")
 	#pragma comment(linker, "/EXPORT:Destroy_HP_HttpsAgent=_Destroy_HP_HttpsAgent@4")
 	#pragma comment(linker, "/EXPORT:Destroy_HP_HttpsClient=_Destroy_HP_HttpsClient@4")
 	#pragma comment(linker, "/EXPORT:Destroy_HP_HttpsServer=_Destroy_HP_HttpsServer@4")
@@ -190,10 +190,10 @@ HPSOCKET_API void __stdcall Destroy_HP_SSLPackClient(HP_SSLPackClient pClient)
 /******************************************************************** HTTPS Exports ******************************************************************/
 /*****************************************************************************************************************************************************/
 
-typedef C_HP_ObjectT<CHttpsServer, IHttpServerListener, sizeof(IComplexHttpResponder)>	C_HP_HttpsServer;
-typedef C_HP_ObjectT<CHttpsAgent, IHttpAgentListener, sizeof(IComplexHttpRequester)>	C_HP_HttpsAgent;
-typedef C_HP_ObjectT<CHttpsClient, IHttpClientListener, sizeof(IHttpRequester)>			C_HP_HttpsClient;
-typedef C_HP_ObjectT<CHttpsSyncClient, void, sizeof(IHttpSyncRequester)>				C_HP_HttpsSyncClient;
+typedef C_HP_ObjectT<CHttpsServer, IHttpServerListener, sizeof(IComplexHttpResponder)>		C_HP_HttpsServer;
+typedef C_HP_ObjectT<CHttpsAgent, IHttpAgentListener, sizeof(IComplexHttpRequester)>		C_HP_HttpsAgent;
+typedef C_HP_ObjectT<CHttpsClient, IHttpClientListener, sizeof(IHttpRequester)>				C_HP_HttpsClient;
+typedef C_HP_ObjectT<CHttpsSyncClient, IHttpClientListener, sizeof(IHttpSyncRequester)>		C_HP_HttpsSyncClient;
 
 /****************************************************/
 /**************** HTTPS 对象创建函数 *****************/
@@ -213,9 +213,9 @@ HPSOCKET_API HP_HttpsClient __stdcall Create_HP_HttpsClient(HP_HttpClientListene
 	return (HP_HttpsClient)(new C_HP_HttpsClient((IHttpClientListener*)pListener));
 }
 
-HPSOCKET_API HP_HttpsSyncClient __stdcall Create_HP_HttpsSyncClient()
+HPSOCKET_API HP_HttpsSyncClient __stdcall Create_HP_HttpsSyncClient(HP_HttpClientListener pListener)
 {
-	return (HP_HttpsSyncClient)(new C_HP_HttpsSyncClient());
+	return (HP_HttpsSyncClient)(new C_HP_HttpsSyncClient((IHttpClientListener*)pListener));
 }
 
 HPSOCKET_API void __stdcall Destroy_HP_HttpsServer(HP_HttpsServer pServer)

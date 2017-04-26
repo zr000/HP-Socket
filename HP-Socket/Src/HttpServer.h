@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -82,7 +82,7 @@ public:
 
 	virtual BOOL GetWSMessageState(CONNID dwConnID, BOOL* lpbFinal, BYTE* lpiReserved, BYTE* lpiOperationCode, LPCBYTE* lpszMask, ULONGLONG* lpullBodyLen, ULONGLONG* lpullBodyRemain);
 
-protected:
+private:
 	virtual BOOL CheckParams();
 	virtual void PrepareStart();
 	virtual EnHandleResult DoFireAccept(TSocketObj* pSocketObj);
@@ -126,11 +126,14 @@ protected:
 	inline THttpObj* FindHttpObj(CONNID dwConnID);
 	inline THttpObj* FindHttpObj(TSocketObj* pSocketObj);
 
+	CCookieMgr* GetCookieMgr()						{return nullptr;}
+	LPCSTR GetRemoteDomain(TSocketObj* pSocketObj)	{return nullptr;}
+
 private:
-	UINT CleanerThreadProc();
 	void KillDyingConnection();
 	void ReleaseDyingConnection();
 
+	UINT CleanerThreadProc();
 	void WaitForCleanerThreadEnd();
 
 public:

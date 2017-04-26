@@ -14,6 +14,7 @@ class CClientDlg : public CDialogEx, public CHttpClientListener
 // Construction
 public:
 	CClientDlg(CWnd* pParent = NULL);	// standard constructor
+	~CClientDlg();
 
 // Dialog Data
 	enum { IDD = IDD_CLIENT_DIALOG };
@@ -66,7 +67,6 @@ private:
 	virtual EnHandleResult OnWSMessageBody(IHttpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength);
 	virtual EnHandleResult OnWSMessageComplete(IHttpClient* pSender, CONNID dwConnID);
 
-	static void CheckSetCookie(IHttpClient* pHttpClient);
 	static CStringA GetHeaderSummary(IHttpClient* pHttpClient, LPCSTR lpszSep = "  ", int iSepCount = 0, BOOL bWithContentLength = TRUE);
 
 private:
@@ -74,6 +74,7 @@ private:
 	CListBox m_Info;
 	CEdit m_Address;
 	CEdit m_Port;
+	CButton m_UseCookie;
 	CButton m_Async;
 	CButton m_Start;
 	CButton m_Stop;
@@ -87,6 +88,7 @@ private:
 	CEdit m_Body;
 
 	BOOL m_bWebSocket;
+	BOOL m_bUseCookie;
 	BOOL m_bAsyncConn;
 	EnAppState m_enState;
 

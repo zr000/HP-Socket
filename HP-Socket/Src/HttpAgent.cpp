@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -66,8 +66,14 @@ template<class T, USHORT default_port> BOOL CHttpAgentT<T, default_port>::SendRe
 	GetRemoteHost(dwConnID, &lpszHost, &usPort);
 	if(usPort == default_port) usPort = 0;
 
+	CStringA strPath;
+	::AdjustRequestPath(lpszPath, strPath);
+
+	pHttpObj->SetRequestPath(strPath);
+	pHttpObj->ReloadCookies();
+
 	::MakeRequestLine(lpszMethod, lpszPath, m_enLocalVersion, strHeader);
-	::MakeHeaderLines(lpHeaders, iHeaderCount, &pHttpObj->GetCookieMap(), iLength, TRUE, lpszHost, usPort, strHeader);
+	::MakeHeaderLines(lpHeaders, iHeaderCount, &pHttpObj->GetCookieMap(), iLength, TRUE, -1, lpszHost, usPort, strHeader);
 	::MakeHttpPacket(strHeader, pBody, iLength, szBuffer);
 
 	return SendPackets(dwConnID, szBuffer, 2);
@@ -299,38 +305,6 @@ template<class T, USHORT default_port> BOOL CHttpAgentT<T, default_port>::GetAll
 		return FALSE;
 
 	return pHttpObj->GetAllCookies(lpCookies, dwCount);
-}
-
-template<class T, USHORT default_port> BOOL CHttpAgentT<T, default_port>::AddCookie(CONNID dwConnID, LPCSTR lpszName, LPCSTR lpszValue, BOOL bRelpace)
-{
-	THttpObj* pHttpObj = FindHttpObj(dwConnID);
-
-	if(pHttpObj == nullptr)
-		return FALSE;
-
-	return pHttpObj->AddCookie(lpszName, lpszValue, bRelpace);
-}
-
-template<class T, USHORT default_port> BOOL CHttpAgentT<T, default_port>::DeleteCookie(CONNID dwConnID, LPCSTR lpszName)
-{
-	THttpObj* pHttpObj = FindHttpObj(dwConnID);
-
-	if(pHttpObj == nullptr)
-		return FALSE;
-
-	return pHttpObj->DeleteCookie(lpszName);
-}
-
-template<class T, USHORT default_port> BOOL CHttpAgentT<T, default_port>::DeleteAllCookies(CONNID dwConnID)
-{
-	THttpObj* pHttpObj = FindHttpObj(dwConnID);
-
-	if(pHttpObj == nullptr)
-		return FALSE;
-
-	pHttpObj->DeleteAllCookies();
-
-	return TRUE;
 }
 
 template<class T, USHORT default_port> USHORT CHttpAgentT<T, default_port>::GetStatusCode(CONNID dwConnID)

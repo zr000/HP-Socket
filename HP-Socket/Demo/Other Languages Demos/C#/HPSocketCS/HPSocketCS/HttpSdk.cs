@@ -384,9 +384,10 @@ namespace HPSocketCS
         /// <summary>
         /// 创建 HP_HttpSyncClient 对象
         /// </summary>
+        /// <param name="pListener"></param>
         /// <returns></returns>
         [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
-        public static extern IntPtr Create_HP_HttpSyncClient();
+        public static extern IntPtr Create_HP_HttpSyncClient(IntPtr pListener);
 
 
         /// <summary>
@@ -597,24 +598,24 @@ namespace HPSocketCS
 
         /**************************************************************************/
         /***************************** Server 操作方法 *****************************/
+        /*
+               * 名称：回复请求
+               * 描述：向客户端回复 HTTP 请求
+               *
+               * 参数：		dwConnID		-- 连接 ID
+               *			usStatusCode	-- HTTP 状态码
+               *			lpszDesc		-- HTTP 状态描述
+               *			lpHeaders		-- 回复请求头
+               *			iHeaderCount	-- 回复请求头数量
+               *			pData			-- 回复请求体
+               *			iLength			-- 回复请求体长度
+               * 返回值：	TRUE			-- 成功
+               *			FALSE			-- 失败
+               */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
+        public static extern bool HP_HttpServer_SendResponse(IntPtr pServer, IntPtr dwConnID, ushort usStatusCode, string lpszDesc, THeader[] lpHeaders, int iHeaderCount, byte[] pData, int iLength);
 
         /*
-        * 名称：回复请求
-        * 描述：向客户端回复 HTTP 请求
-        *
-        * 参数：		dwConnID		-- 连接 ID
-        *			usStatusCode	-- HTTP 状态码
-        *			lpszDesc		-- HTTP 状态描述
-        *			lpHeaders		-- 回复请求头
-        *			iHeaderCount	-- 回复请求头数量
-        *			pData			-- 回复请求体
-        *			iLength			-- 回复请求体长度
-        * 返回值：	TRUE			-- 成功
-        *			FALSE			-- 失败
-        */
-        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern bool HP_HttpServer_SendResponse(IntPtr pServer, IntPtr dwConnID, ushort usStatusCode, string lpszDesc, THeader[] lpHeaders, int iHeaderCount, string pData, int iLength);
-
         /*
         * 名称：发送本地文件
         * 描述：向指定连接发送 4096 KB 以下的小文件
@@ -766,7 +767,7 @@ namespace HPSocketCS
         *			FALSE			-- 失败
         */
         [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern bool HP_HttpAgent_SendRequest(IntPtr pAgent, IntPtr dwConnID, string lpszMethod, string lpszPath, THeader[] lpHeaders, int iHeaderCount, string pData, int iLength);
+        public static extern bool HP_HttpAgent_SendRequest(IntPtr pAgent, IntPtr dwConnID, string lpszMethod, string lpszPath, THeader[] lpHeaders, int iHeaderCount, byte[] pData, int iLength);
 
         /*
         * 名称：发送本地文件
@@ -890,22 +891,19 @@ namespace HPSocketCS
         [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
         public static extern bool HP_HttpAgent_GetAllHeaderNames(IntPtr pAgent, IntPtr dwConnID, IntPtr[] lpszName, ref uint pdwCount);
 
+        /* 设置是否使用 Cookie */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
+        public static extern void HP_HttpAgent_SetUseCookie(IntPtr pAgent, bool bUseCookie);
+        /* 检查是否使用 Cookie */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
+        public static extern bool HP_HttpAgent_IsUseCookie(IntPtr pAgent);
+
         /* 获取 Cookie */
         [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
         public static extern bool HP_HttpAgent_GetCookie(IntPtr pAgent, IntPtr dwConnID, string lpszName, ref IntPtr lpszValue);
         /* 获取所有 Cookie */
         [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
         public static extern bool HP_HttpAgent_GetAllCookies(IntPtr pAgent, IntPtr dwConnID, IntPtr lpCookies, ref uint pdwCount);
-        /* 添加 Cookie */
-        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern bool HP_HttpAgent_AddCookie(IntPtr pAgent, IntPtr dwConnID, string lpszName, string lpszValue, bool bRelpace);
-        /* 删除 Cookie */
-        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern bool HP_HttpAgent_DeleteCookie(IntPtr pAgent, IntPtr dwConnID, string lpszName);
-        /* 删除所有 Cookie */
-        [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
-        public static extern bool HP_HttpAgent_DeleteAllCookies(IntPtr pAgent, IntPtr dwConnID);
-
         /* 获取当前 WebSocket 消息状态，传入 nullptr 则不获取相应字段 */
         [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
         public static extern bool HP_HttpAgent_GetWSMessageState(IntPtr pAgent, IntPtr dwConnID, ref bool lpbFinal, ref byte lpiReserved, ref byte lpiOperationCode, ref IntPtr lpszMask, ref ulong lpullBodyLen, ref ulong lpullBodyRemain);
@@ -930,7 +928,7 @@ namespace HPSocketCS
         *			FALSE			-- 失败
         */
         [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern bool HP_HttpClient_SendRequest(IntPtr pClient, string lpszMethod, string lpszPath, THeader[] lpHeaders, int iHeaderCount, string pBody, int iLength);
+        public static extern bool HP_HttpClient_SendRequest(IntPtr pClient, string lpszMethod, string lpszPath, THeader[] lpHeaders, int iHeaderCount, byte[] pBody, int iLength);
 
         /*
         * 名称：发送本地文件
@@ -1052,21 +1050,20 @@ namespace HPSocketCS
         [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
         public static extern bool HP_HttpClient_GetAllHeaderNames(IntPtr pClient, IntPtr[] lpszName, ref uint pdwCount);
 
+        /* 设置是否使用 Cookie */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
+        public static extern void HP_HttpClient_SetUseCookie(IntPtr pClient, bool bUseCookie);
+        /* 检查是否使用 Cookie */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
+        public static extern bool HP_HttpClient_IsUseCookie(IntPtr pClient);
+        /* 获取 Cookie */
+
         /* 获取 Cookie */
         [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
         public static extern bool HP_HttpClient_GetCookie(IntPtr pClient, string lpszName, ref IntPtr lpszValue);
         /* 获取所有 Cookie */
         [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
         public static extern bool HP_HttpClient_GetAllCookies(IntPtr pClient, IntPtr lpCookies, ref uint pdwCount);
-        /* 添加 Cookie */
-        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern bool HP_HttpClient_AddCookie(IntPtr pClient, string lpszName, string lpszValue, bool bRelpace);
-        /* 删除 Cookie */
-        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern bool HP_HttpClient_DeleteCookie(IntPtr pClient, string lpszName);
-        /* 删除所有 Cookie */
-        [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
-        public static extern bool HP_HttpClient_DeleteAllCookies(IntPtr pClient);
 
         /* 获取当前 WebSocket 消息状态，传入 nullptr 则不获取相应字段 */
         [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
@@ -1075,56 +1072,120 @@ namespace HPSocketCS
 
         /**************************************************************************/
         /************************ HTTP Sync Client 操作方法 ************************/
-        /*
-        * 名称：发送 URL 请求
-        * 描述：向服务端发送 HTTP URL 请求
-        *		
-        * 参数：		lpszMethod		-- 请求方法
-        *			lpszUrl			-- 请求 URL
-        *			lpHeaders		-- 请求头
-        *			iHeaderCount	-- 请求头数量
-        *			pBody			-- 请求体
-        *			iLength			-- 请求体长度
-        *			bForceReconnect	-- 强制重新连接（默认：FALSE，当请求 URL 的主机和端口与现有连接一致时，重用现有连接）
-        * 返回值：	TRUE			-- 成功
-        *			FALSE			-- 失败
-        */
+        /// <summary>
+        /// 名称：发送 URL 请求
+        /// 描述：向服务端发送 HTTP URL 请求
+        /// </summary>
+        /// <param name="pClient"></param>
+        /// <param name="lpszMethod">请求方法</param>
+        /// <param name="lpszUrl">请求 URL</param>
+        /// <param name="lpHeaders">请求头</param>
+        /// <param name="iHeaderCount">请求头数量</param>
+        /// <param name="pBody">请求体</param>
+        /// <param name="iLength">请求体长度</param>
+        /// <param name="bForceReconnect">强制重新连接（默认：FALSE，当请求 URL 的主机和端口与现有连接一致时，重用现有连接）</param>
+        /// <returns></returns>
         [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
         public static extern bool HP_HttpSyncClient_OpenUrl(IntPtr pClient, string lpszMethod, string lpszUrl, THeader[] lpHeaders, int iHeaderCount, string pData, int iLength, bool bForceReconnect);
 
 
-        /*
-        * 名称：清除请求结果
-        * 描述：清除上一次请求的响应头和响应体等结果信息（该方法会在每次发送请求前自动调用）
-        *
-        * 参数：		
-        * 返回值：	TRUE			-- 成功
-        *			FALSE			-- 失败
-        */
+        /// <summary>
+        /// 名称：清除请求结果
+        /// 描述：清除上一次请求的响应头和响应体等结果信息（该方法会在每次发送请求前自动调用）
+        /// </summary>
+        /// <param name="pClient"></param>
+        /// <returns></returns>
         [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
         public static extern bool HP_HttpSyncClient_CleanupRequestResult(IntPtr pClient);
 
         /******************************************************************************/
         /************************ HTTP Sync Client 属性访问方法 ************************/
-
-        /* 设置连接超时（毫秒，0：系统默认超时，默认：5000） */
+        /// <summary>
+        /// 设置连接超时（毫秒，0：系统默认超时，默认：5000）
+        /// </summary>
+        /// <param name="pClient"></param>
+        /// <param name="dwConnectTimeout"></param>
+        /// <returns></returns>
         [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
         public static extern void HP_HttpSyncClient_SetConnectTimeout(IntPtr pClient, uint dwConnectTimeout);
-
-        /* 设置请求超时（毫秒，0：无限等待，默认：10000） */
+        /// <summary>
+        /// 设置请求超时（毫秒，0：无限等待，默认：10000）
+        /// </summary>
+        /// <param name="pClient"></param>
+        /// <param name="dwConnectTimeout"></param>
+        /// <returns></returns>
         [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
         public static extern void HP_HttpSyncClient_SetRequestTimeout(IntPtr pClient, uint dwRequestTimeout);
-
-        /* 获取连接超时 */
+        /// <summary>
+        /// 获取连接超时
+        /// </summary>
+        /// <param name="pClient"></param>
+        /// <param name="dwConnectTimeout"></param>
+        /// <returns></returns>
         [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
         public static extern uint HP_HttpSyncClient_GetConnectTimeout(IntPtr pClient);
-
-        /* 获取请求超时 */
+        /// <summary>
+        /// 获取请求超时
+        /// </summary>
+        /// <param name="pClient"></param>
+        /// <param name="dwConnectTimeout"></param>
+        /// <returns></returns>
         [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
         public static extern uint HP_HttpSyncClient_GetRequestTimeout(IntPtr pClient);
 
-        /* 获取响应体 */
+        /// <summary>
+        /// 获取响应体
+        /// </summary>
+        /// <param name="pClient"></param>
+        /// <param name="dwConnectTimeout"></param>
+        /// <returns></returns>
         [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
         public static extern uint HP_HttpSyncClient_GetResponseBody(IntPtr pClient, ref IntPtr lpszBody, ref int iLength);
+
+        /**************************************************************************/
+        /*************************** HTTP Cookie 管理方法 **************************/
+        /* 从文件加载 Cookie */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
+        public static extern bool HP_HttpCookie_MGR_LoadFromFile(string lpszFile, bool bKeepExists /*= TRUE*/);
+        /* 保存 Cookie 到文件 */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
+        public static extern bool HP_HttpCookie_MGR_SaveToFile(string lpszFile, bool bKeepExists /*= TRUE*/);
+        /* 清理 Cookie */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
+        public static extern bool HP_HttpCookie_MGR_ClearCookies(string lpszDomain /*= nullptr*/, string lpszPath /*= nullptr*/);
+        /* 清理过期 Cookie */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
+        public static extern bool HP_HttpCookie_MGR_RemoveExpiredCookies(string lpszDomain /*= nullptr*/, string lpszPath /*= nullptr*/);
+        /* 设置 Cookie */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
+        public static extern bool HP_HttpCookie_MGR_SetCookie(string lpszName, string lpszValue, string lpszDomain, string lpszPath, int iMaxAge /*= -1*/, bool bHttpOnly /*= FALSE*/, bool bSecure /*= FALSE*/, int enSameSite /*= 0*/, bool bOnlyUpdateValueIfExists /*= TRUE*/);
+        /* 删除 Cookie */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
+        public static extern bool HP_HttpCookie_MGR_DeleteCookie(string lpszDomain, string lpszPath, string lpszName);
+        /* 设置是否允许第三方 Cookie */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
+        public static extern void HP_HttpCookie_MGR_SetEnableThirdPartyCookie(bool bEnableThirdPartyCookie /*= TRUE*/);
+        /* 检查是否允许第三方 Cookie */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
+        public static extern bool HP_HttpCookie_MGR_IsEnableThirdPartyCookie();
+
+        /* Cookie expires 字符串转换为整数 */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
+        public static extern bool HP_HttpCookie_HLP_ParseExpires(string lpszExpires, ref ulong ptmExpires);
+        /* 整数转换为 Cookie expires 字符串 */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
+        public static extern bool HP_HttpCookie_HLP_MakeExpiresStr([MarshalAs(UnmanagedType.LPStr)] StringBuilder lpszBuff, ref int piBuffLen, ulong tmExpires);
+        /* 生成 Cookie 字符串 */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, CharSet = CharSet.Ansi, SetLastError = true)]
+        public static extern bool HP_HttpCookie_HLP_ToString([MarshalAs(UnmanagedType.LPStr)] StringBuilder lpszBuff, ref int piBuffLen, string lpszName, string lpszValue, string lpszDomain, string lpszPath, int iMaxAge /*= -1*/, bool bHttpOnly /*= FALSE*/, bool bSecure /*= FALSE*/, int enSameSite /*= 0*/);
+        /* 获取当前 UTC 时间 */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
+        public static extern ulong HP_HttpCookie_HLP_CurrentUTCTime();
+        /* Max-Age -> expires */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
+        public static extern ulong HP_HttpCookie_HLP_MaxAgeToExpires(int iMaxAge);
+        /* expires -> Max-Age */
+        [DllImport(HPSOCKET_HTTP_DLL_PATH, SetLastError = true)]
+        public static extern int HP_HttpCookie_HLP_ExpiresToMaxAge(ulong tmExpires);
     }
 }

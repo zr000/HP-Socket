@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -63,7 +63,7 @@ template<class T, USHORT default_port> BOOL CHttpServerT<T, default_port>::SendR
 	CStringA strHeader;
 
 	::MakeStatusLine(m_enLocalVersion, usStatusCode, lpszDesc, strHeader);
-	::MakeHeaderLines(lpHeaders, iHeaderCount, nullptr, iLength, FALSE, nullptr, 0, strHeader);
+	::MakeHeaderLines(lpHeaders, iHeaderCount, nullptr, iLength, FALSE, IsKeepAlive(dwConnID), nullptr, 0, strHeader);
 	::MakeHttpPacket(strHeader, pData, iLength, szBuffer);
 
 	return SendPackets(dwConnID, szBuffer, 2);
@@ -137,18 +137,48 @@ template<class T, USHORT default_port> UINT CHttpServerT<T, default_port>::Clean
 
 template<class T, USHORT default_port> void CHttpServerT<T, default_port>::KillDyingConnection()
 {
-	TDyingConnection* pDyingConn = nullptr;
-	DWORD now					 = ::TimeGetTime();
+	TDyingConnection* pDyingConn		= nullptr;
+	TDyingConnection* pFirstDyingConn	= nullptr;
+	DWORD now							= ::TimeGetTime();
 
 	while(m_lsDyingQueue.UnsafePeekFront(&pDyingConn))
 	{
 		if((int)(now - pDyingConn->killTime) < (int)m_dwReleaseDelay)
 			break;
 
-		Disconnect(pDyingConn->connID, TRUE);
+		BOOL bDisconnect = TRUE;
+		BOOL bDestruct	 = TRUE;
 
 		VERIFY(m_lsDyingQueue.UnsafePopFront(&pDyingConn));
-		TDyingConnection::Destruct(pDyingConn);
+
+		int iPending;
+		if(!GetPendingDataLength(pDyingConn->connID, iPending))
+			bDisconnect = FALSE;
+		else if(iPending > 0)
+		{
+			bDisconnect	= FALSE;
+			bDestruct	= FALSE;
+		}
+
+		if(bDisconnect)
+			Disconnect(pDyingConn->connID, TRUE);
+
+		if(bDestruct)
+		{
+			TDyingConnection::Destruct(pDyingConn);
+
+			if(pFirstDyingConn == pDyingConn)
+				pFirstDyingConn = nullptr;
+		}
+		else
+		{
+			m_lsDyingQueue.PushBack(pDyingConn);
+
+			if(pFirstDyingConn == nullptr)
+				pFirstDyingConn = pDyingConn;
+			else if(pFirstDyingConn == pDyingConn)
+				break;
+		}
 	}
 }
 
@@ -181,7 +211,7 @@ template<class T, USHORT default_port> EnHandleResult CHttpServerT<T, default_po
 	ASSERT(pHttpObj);
 
 	if(pHttpObj->HasReleased())
-		return HR_IGNORE;
+		return HR_ERROR;
 
 	return pHttpObj->Execute(pData, iLength);
 }

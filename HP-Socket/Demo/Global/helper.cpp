@@ -693,6 +693,32 @@ CBufferPtr* GeneratePkgBuffer(const TPkgHeader& header, const TPkgBody& body)
 	return pBuffer;
 }
 
+LPCTSTR g_lpszDefaultCookieFile = GetDefaultCookieFile();
+
+LPCTSTR GetDefaultCookieFile()
+{
+	static TCHAR c_szCookieFile[MAX_PATH] = {0};
+
+	if(c_szCookieFile[0] == 0)
+	{
+		CString strName;
+		LPTSTR lpszName = strName.GetBuffer(MAX_PATH);
+
+		DWORD rs = ::GetModuleFileName(nullptr, lpszName, MAX_PATH);
+		ASSERT(rs > 0 && rs < MAX_PATH);
+
+		int iPos = strName.ReverseFind('.');
+		ASSERT(iPos == (int)(rs - 4));
+
+		strName.ReleaseBufferSetLength(iPos + 1);
+		strName.Append(_T("cki"));
+
+		lstrcpy(c_szCookieFile, strName);
+	}
+
+	return c_szCookieFile;
+}
+
 #ifdef _SSL_SUPPORT
 
 #include "../../../Common/Src/FuncHelper.h"

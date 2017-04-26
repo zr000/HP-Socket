@@ -269,9 +269,8 @@ namespace HPSocketCS
         /// <param name="headers">请求头</param>
         /// <param name="body">请求体</param>
         /// <returns></returns>
-        public bool SendRequest(HttpMethod method, string path, THeader[] headers, string body)
+        public bool SendRequest(HttpMethod method, string path, THeader[] headers, byte[] body, int bodyLength)
         {
-            int bodyLength = body == null ? 0 : body.Length;
             int headersLength = headers == null ? 0 : headers.Length;
             return HttpSdk.HP_HttpClient_SendRequest(pClient, method.ToString(), path, headers, headersLength, body, bodyLength);
         }
@@ -417,6 +416,23 @@ namespace HPSocketCS
 
         /******************************************************************************/
         /***************************** Agent 属性访问方法 ******************************/
+
+
+        /// <summary>
+        /// 获取或设置是否使用 Cookie
+        /// </summary>
+        public bool UseCookie
+        {
+            get
+            {
+                return HttpSdk.HP_HttpClient_IsUseCookie(pClient);
+            }
+            set
+            {
+                HttpSdk.HP_HttpClient_SetUseCookie(pClient, value);
+            }
+        }
+
         /// <summary>
         /// 获取 HTTP 状态码
         /// </summary>
@@ -719,57 +735,5 @@ namespace HPSocketCS
 
             return list;
         }
-
-        /// <summary>
-        /// 添加cookie
-        /// </summary>
-        /// <param name="connId"></param>
-        /// <param name="name"></param>
-        /// <param name="value"></param>
-        /// <param name="relpace">是否替换</param>
-        /// <returns></returns>
-        public bool AddCookie(string name, string value, bool relpace)
-        {
-            return HttpSdk.HP_HttpClient_AddCookie(pClient, name, value, relpace);
-        }
-
-        /// <summary>
-        /// 添加cookie
-        /// </summary>
-        /// <param name="connId"></param>
-        /// <param name="cookie"></param>
-        /// <param name="relpace">是否替换</param>
-        /// <returns></returns>
-        public bool AddCookie(TCookie cookie, bool relpace)
-        {
-            return HttpSdk.HP_HttpClient_AddCookie(pClient, cookie.Name, cookie.Value, relpace);
-        }
-
-        /// <summary>
-        /// 删除cookie
-        /// </summary>
-        /// <param name="connId"></param>
-        /// <param name="cookie"></param>
-        /// <param name="relpace">是否替换</param>
-        /// <returns></returns>
-        public bool DeleteCookie(string name)
-        {
-            return HttpSdk.HP_HttpClient_DeleteCookie(pClient, name);
-        }
-
-
-        /// <summary>
-        /// 删除所有cookie
-        /// </summary>
-        /// <param name="connId"></param>
-        /// <param name="cookie"></param>
-        /// <param name="relpace">是否替换</param>
-        /// <returns></returns>
-        public bool DeleteCookie(IntPtr connId)
-        {
-            return HttpSdk.HP_HttpClient_DeleteAllCookies(pClient);
-        }
-
-
     }
 }

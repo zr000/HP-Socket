@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -40,73 +40,77 @@
 描述：声明组件的公共全局常量
 ************************************************************************/
 
-#define HP_VERSION_MAJOR	4
-#define HP_VERSION_MINOR	1
-#define HP_VERSION_REVISE	3
-#define HP_VERSION_BUILD	1
+/* HP-Socket 版本号 */
+#define HP_VERSION_MAJOR						4
+#define HP_VERSION_MINOR						2
+#define HP_VERSION_REVISE						1
+#define HP_VERSION_BUILD						5
 
 /* IOCP 最大工作线程数 */
-extern const DWORD MAX_WORKER_THREAD_COUNT;
+#define MAX_WORKER_THREAD_COUNT					500
 /* IOCP Socket 缓冲区最小值 */
-extern const DWORD MIN_SOCKET_BUFFER_SIZE;
+#define MIN_SOCKET_BUFFER_SIZE					64
 /* 小文件最大字节数 */
-extern const DWORD MAX_SMALL_FILE_SIZE;
+#define MAX_SMALL_FILE_SIZE						0x3FFFFF
 /* 最大连接时长 */
-extern const DWORD MAX_CONNECTION_PERIOD;
+#define MAX_CONNECTION_PERIOD					(MAXLONG / 2)
 
 /* Server/Agent 默认最大连接数 */
-extern const DWORD DEFAULT_MAX_CONNECTION_COUNT;
+#define DEFAULT_MAX_CONNECTION_COUNT			10000
 /* Server/Agent 默认 IOCP 工作线程数 */
-extern const DWORD DEFAULT_WORKER_THREAD_COUNT;
+#define DEFAULT_WORKER_THREAD_COUNT				GetDefaultWorkerThreadCount()
 /* Server/Agent 默认 Socket 缓存对象锁定时间 */
-extern const DWORD DEFAULT_FREE_SOCKETOBJ_LOCK_TIME;
+#define DEFAULT_FREE_SOCKETOBJ_LOCK_TIME		(10 * 1000)
 /* Server/Agent 默认 Socket 缓存池大小 */
-extern const DWORD DEFAULT_FREE_SOCKETOBJ_POOL;
+#define DEFAULT_FREE_SOCKETOBJ_POOL				150
 /* Server/Agent 默认 Socket 缓存池回收阀值 */
-extern const DWORD DEFAULT_FREE_SOCKETOBJ_HOLD;
+#define DEFAULT_FREE_SOCKETOBJ_HOLD				600
 /* Server/Agent 默认内存块缓存池大小 */
-extern const DWORD DEFAULT_FREE_BUFFEROBJ_POOL;
+#define DEFAULT_FREE_BUFFEROBJ_POOL				300
 /* Server/Agent 默认内存块缓存池回收阀值 */
-extern const DWORD DEFAULT_FREE_BUFFEROBJ_HOLD;
+#define DEFAULT_FREE_BUFFEROBJ_HOLD				1200
 /* Client 默认内存块缓存池大小 */
-extern const DWORD DEFAULT_CLIENT_FREE_BUFFER_POOL_SIZE;
+#define DEFAULT_CLIENT_FREE_BUFFER_POOL_SIZE	10
 /* Client 默认内存块缓存池回收阀值 */
-extern const DWORD DEFAULT_CLIENT_FREE_BUFFER_POOL_HOLD;
+#define DEFAULT_CLIENT_FREE_BUFFER_POOL_HOLD	40
 /* Agent 默认绑定地址 */
-extern LPCTSTR DEFAULT_BIND_ADDRESS;
+#define  DEFAULT_BIND_ADDRESS					_T("0.0.0.0")
 
 /* TCP 默认通信数据缓冲区大小 */
-extern const DWORD DEFAULT_TCP_SOCKET_BUFFER_SIZE;
+#define DEFAULT_TCP_SOCKET_BUFFER_SIZE			GetDefaultTcpSocketBufferSize()
 /* TCP 默认心跳包间隔 */
-extern const DWORD DEFALUT_TCP_KEEPALIVE_TIME;
+#define DEFALUT_TCP_KEEPALIVE_TIME				(30 * 1000)
 /* TCP 默认心跳确认包检测间隔 */
-extern const DWORD DEFALUT_TCP_KEEPALIVE_INTERVAL;
+#define DEFALUT_TCP_KEEPALIVE_INTERVAL			(10 * 1000)
 /* TCP Server 默认 Listen 队列大小 */
-extern const DWORD DEFAULT_TCP_SERVER_SOCKET_LISTEN_QUEUE;
+#define DEFAULT_TCP_SERVER_SOCKET_LISTEN_QUEUE	SOMAXCONN
 /* TCP Server 默认预投递 Accept 数量 */
-extern const DWORD DEFAULT_TCP_SERVER_ACCEPT_SOCKET_COUNT;
+#define DEFAULT_TCP_SERVER_ACCEPT_SOCKET_COUNT	300
 
 /* UDP 默认数据报文最大长度 */
-extern const DWORD DEFAULT_UDP_MAX_DATAGRAM_SIZE;
+#define DEFAULT_UDP_MAX_DATAGRAM_SIZE			1472
 /* UDP 默认 Receive 预投递数量 */
-extern const DWORD DEFAULT_UDP_POST_RECEIVE_COUNT;
+#define DEFAULT_UDP_POST_RECEIVE_COUNT			300
 /* UDP 默认监测包尝试次数 */
-extern const DWORD DEFAULT_UDP_DETECT_ATTEMPTS;
+#define DEFAULT_UDP_DETECT_ATTEMPTS				3
 /* UDP 默认监测包发送间隔 */
-extern const DWORD DEFAULT_UDP_DETECT_INTERVAL;
+#define DEFAULT_UDP_DETECT_INTERVAL				20
 
 /* TCP Pack 包长度位数 */
-extern const DWORD TCP_PACK_LENGTH_BITS;
+#define TCP_PACK_LENGTH_BITS					22
 /* TCP Pack 包长度掩码 */
-extern const DWORD TCP_PACK_LENGTH_MASK;
+#define TCP_PACK_LENGTH_MASK					0x3FFFFF
 /* TCP Pack 包最大长度硬限制 */
-extern const DWORD TCP_PACK_MAX_SIZE_LIMIT;
+#define TCP_PACK_MAX_SIZE_LIMIT					0x3FFFFF
 /* TCP Pack 包默认最大长度 */
-extern const DWORD TCP_PACK_DEFAULT_MAX_SIZE;
+#define TCP_PACK_DEFAULT_MAX_SIZE				0x040000
 /* TCP Pack 包头标识值硬限制 */
-extern const USHORT TCP_PACK_HEADER_FLAG_LIMIT;
+#define TCP_PACK_HEADER_FLAG_LIMIT				0x0003FF
 /* TCP Pack 包头默认标识值 */
-extern const USHORT TCP_PACK_DEFAULT_HEADER_FLAG;
+#define TCP_PACK_DEFAULT_HEADER_FLAG			0x000000
+
+DWORD GetDefaultWorkerThreadCount();
+DWORD GetDefaultTcpSocketBufferSize();
 
 /************************************************************************
 名称：Windows Socket 组件初始化类
@@ -366,6 +370,7 @@ struct TSocketObj : public TSocketObjBase
 	static void Release(TSocketObj* pSocketObj)
 	{
 		__super::Release(pSocketObj);
+
 		pSocketObj->sndBuff.Release();
 	}
 
@@ -376,6 +381,16 @@ struct TSocketObj : public TSocketObjBase
 		host.Empty();
 
 		socket = soClient;
+	}
+
+	BOOL GetRemoteHost(LPCSTR* lpszHost, USHORT* pusPort = nullptr)
+	{
+		*lpszHost = host;
+
+		if(pusPort)
+			*pusPort = ntohs(remoteAddr.sin_port);
+
+		return (*lpszHost != nullptr && (*lpszHost)[0] != 0);
 	}
 };
 
@@ -394,6 +409,7 @@ struct TUdpSocketObj : public TSocketObjBase
 	static void Release(TUdpSocketObj* pSocketObj)
 	{
 		__super::Release(pSocketObj);
+
 		pSocketObj->sndBuff.Release();
 	}
 

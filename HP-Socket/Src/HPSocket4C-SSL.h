@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -151,7 +151,7 @@ HPSOCKET_API HP_HttpsAgent __stdcall Create_HP_HttpsAgent(HP_HttpAgentListener p
 // 创建 HP_HttpsClient 对象
 HPSOCKET_API HP_HttpsClient __stdcall Create_HP_HttpsClient(HP_HttpClientListener pListener);
 // 创建 HP_HttpSyncClient 对象
-HPSOCKET_API HP_HttpsSyncClient __stdcall Create_HP_HttpsSyncClient();
+HPSOCKET_API HP_HttpsSyncClient __stdcall Create_HP_HttpsSyncClient(HP_HttpClientListener pListener);
 
 // 销毁 HP_HttpsServer 对象
 HPSOCKET_API void __stdcall Destroy_HP_HttpsServer(HP_HttpsServer pServer);

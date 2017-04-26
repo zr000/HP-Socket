@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -441,6 +441,8 @@ HPSOCKET_API BOOL __stdcall HP_Server_SetConnectionExtra(HP_Server pServer, HP_C
 */
 HPSOCKET_API BOOL __stdcall HP_Server_GetConnectionExtra(HP_Server pServer, HP_CONNID dwConnID, PVOID* ppExtra);
 
+/* 检测是否为安全连接（SSL/HTTPS） */
+HPSOCKET_API BOOL __stdcall HP_Server_IsSecure(HP_Server pServer);
 /* 检查通信组件是否已启动 */
 HPSOCKET_API BOOL __stdcall HP_Server_HasStarted(HP_Server pServer);
 /* 查看通信组件当前状态 */
@@ -700,6 +702,8 @@ HPSOCKET_API BOOL __stdcall HP_Agent_SetConnectionExtra(HP_Agent pAgent, HP_CONN
 */
 HPSOCKET_API BOOL __stdcall HP_Agent_GetConnectionExtra(HP_Agent pAgent, HP_CONNID dwConnID, PVOID* ppExtra);
 
+/* 检测是否为安全连接（SSL/HTTPS） */
+HPSOCKET_API BOOL __stdcall HP_Agent_IsSecure(HP_Agent pAgent);
 /* 检查通信组件是否已启动 */
 HPSOCKET_API BOOL __stdcall HP_Agent_HasStarted(HP_Agent pAgent);
 /* 查看通信组件当前状态 */
@@ -883,6 +887,8 @@ HPSOCKET_API void __stdcall HP_Client_SetExtra(HP_Client pClient, PVOID pExtra);
 /* 获取连接的附加数据 */
 HPSOCKET_API PVOID __stdcall HP_Client_GetExtra(HP_Client pClient);
 
+/* 检测是否为安全连接（SSL/HTTPS） */
+HPSOCKET_API BOOL __stdcall HP_Client_IsSecure(HP_Client pClient);
 /* 检查通信组件是否已启动 */
 HPSOCKET_API BOOL __stdcall HP_Client_HasStarted(HP_Client pClient);
 /* 查看通信组件当前状态 */
@@ -1220,7 +1226,7 @@ HPSOCKET_API HP_HttpAgent __stdcall Create_HP_HttpAgent(HP_HttpAgentListener pLi
 // 创建 HP_HttpClient 对象
 HPSOCKET_API HP_HttpClient __stdcall Create_HP_HttpClient(HP_HttpClientListener pListener);
 // 创建 HP_HttpSyncClient 对象
-HPSOCKET_API HP_HttpSyncClient __stdcall Create_HP_HttpSyncClient();
+HPSOCKET_API HP_HttpSyncClient __stdcall Create_HP_HttpSyncClient(HP_HttpClientListener pListener);
 
 // 销毁 HP_HttpServer 对象
 HPSOCKET_API void __stdcall Destroy_HP_HttpServer(HP_HttpServer pServer);
@@ -1557,16 +1563,14 @@ HPSOCKET_API BOOL __stdcall HP_HttpAgent_GetAllHeaders(HP_HttpAgent pAgent, HP_C
 /* 获取所有请求头名称 */
 HPSOCKET_API BOOL __stdcall HP_HttpAgent_GetAllHeaderNames(HP_HttpAgent pAgent, HP_CONNID dwConnID, LPCSTR lpszName[], DWORD* pdwCount);
 
+/* 设置是否使用 Cookie */
+HPSOCKET_API void __stdcall HP_HttpAgent_SetUseCookie(HP_HttpAgent pAgent, BOOL bUseCookie);
+/* 检查是否使用 Cookie */
+HPSOCKET_API BOOL __stdcall HP_HttpAgent_IsUseCookie(HP_HttpAgent pAgent);
 /* 获取 Cookie */
 HPSOCKET_API BOOL __stdcall HP_HttpAgent_GetCookie(HP_HttpAgent pAgent, HP_CONNID dwConnID, LPCSTR lpszName, LPCSTR* lpszValue);
 /* 获取所有 Cookie */
 HPSOCKET_API BOOL __stdcall HP_HttpAgent_GetAllCookies(HP_HttpAgent pAgent, HP_CONNID dwConnID, HP_TCookie lpCookies[], DWORD* pdwCount);
-/* 添加 Cookie */
-HPSOCKET_API BOOL __stdcall HP_HttpAgent_AddCookie(HP_HttpAgent pAgent, HP_CONNID dwConnID, LPCSTR lpszName, LPCSTR lpszValue, BOOL bRelpace);
-/* 删除 Cookie */
-HPSOCKET_API BOOL __stdcall HP_HttpAgent_DeleteCookie(HP_HttpAgent pAgent, HP_CONNID dwConnID, LPCSTR lpszName);
-/* 删除所有 Cookie */
-HPSOCKET_API BOOL __stdcall HP_HttpAgent_DeleteAllCookies(HP_HttpAgent pAgent, HP_CONNID dwConnID);
 
 /* 获取当前 WebSocket 消息状态，传入 nullptr 则不获取相应字段 */
 HPSOCKET_API BOOL __stdcall HP_HttpAgent_GetWSMessageState(HP_HttpAgent pAgent, HP_CONNID dwConnID, BOOL* lpbFinal, BYTE* lpiReserved, BYTE* lpiOperationCode, LPCBYTE* lpszMask, ULONGLONG* lpullBodyLen, ULONGLONG* lpullBodyRemain);
@@ -1682,16 +1686,14 @@ HPSOCKET_API BOOL __stdcall HP_HttpClient_GetAllHeaders(HP_HttpClient pClient, H
 /* 获取所有请求头名称 */
 HPSOCKET_API BOOL __stdcall HP_HttpClient_GetAllHeaderNames(HP_HttpClient pClient, LPCSTR lpszName[], DWORD* pdwCount);
 
+/* 设置是否使用 Cookie */
+HPSOCKET_API void __stdcall HP_HttpClient_SetUseCookie(HP_HttpClient pClient, BOOL bUseCookie);
+/* 检查是否使用 Cookie */
+HPSOCKET_API BOOL __stdcall HP_HttpClient_IsUseCookie(HP_HttpClient pClient);
 /* 获取 Cookie */
 HPSOCKET_API BOOL __stdcall HP_HttpClient_GetCookie(HP_HttpClient pClient, LPCSTR lpszName, LPCSTR* lpszValue);
 /* 获取所有 Cookie */
 HPSOCKET_API BOOL __stdcall HP_HttpClient_GetAllCookies(HP_HttpClient pClient, HP_TCookie lpCookies[], DWORD* pdwCount);
-/* 添加 Cookie */
-HPSOCKET_API BOOL __stdcall HP_HttpClient_AddCookie(HP_HttpClient pClient, LPCSTR lpszName, LPCSTR lpszValue, BOOL bRelpace);
-/* 删除 Cookie */
-HPSOCKET_API BOOL __stdcall HP_HttpClient_DeleteCookie(HP_HttpClient pClient, LPCSTR lpszName);
-/* 删除所有 Cookie */
-HPSOCKET_API BOOL __stdcall HP_HttpClient_DeleteAllCookies(HP_HttpClient pClient);
 
 /* 获取当前 WebSocket 消息状态，传入 nullptr 则不获取相应字段 */
 HPSOCKET_API BOOL __stdcall HP_HttpClient_GetWSMessageState(HP_HttpClient pClient, BOOL* lpbFinal, BYTE* lpiReserved, BYTE* lpiOperationCode, LPCBYTE* lpszMask, ULONGLONG* lpullBodyLen, ULONGLONG* lpullBodyRemain);
@@ -1740,6 +1742,39 @@ HPSOCKET_API DWORD __stdcall HP_HttpSyncClient_GetRequestTimeout(HP_HttpSyncClie
 
 /* 获取响应体 */
 HPSOCKET_API BOOL __stdcall HP_HttpSyncClient_GetResponseBody(HP_HttpSyncClient pClient, LPCBYTE* lpszBody, int* piLength);
+
+/**************************************************************************/
+/*************************** HTTP Cookie 管理方法 **************************/
+
+/* 从文件加载 Cookie */
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_LoadFromFile(LPCSTR lpszFile, BOOL bKeepExists /*= TRUE*/);
+/* 保存 Cookie 到文件 */
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_SaveToFile(LPCSTR lpszFile, BOOL bKeepExists /*= TRUE*/);
+/* 清理 Cookie */
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_ClearCookies(LPCSTR lpszDomain /*= nullptr*/, LPCSTR lpszPath /*= nullptr*/);
+/* 清理过期 Cookie */
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_RemoveExpiredCookies(LPCSTR lpszDomain /*= nullptr*/, LPCSTR lpszPath /*= nullptr*/);
+/* 设置 Cookie */
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_SetCookie(LPCSTR lpszName, LPCSTR lpszValue, LPCSTR lpszDomain, LPCSTR lpszPath, int iMaxAge /*= -1*/, BOOL bHttpOnly /*= FALSE*/, BOOL bSecure /*= FALSE*/, int enSameSite /*= 0*/, BOOL bOnlyUpdateValueIfExists /*= TRUE*/);
+/* 删除 Cookie */
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_DeleteCookie(LPCSTR lpszDomain, LPCSTR lpszPath, LPCSTR lpszName);
+/* 设置是否允许第三方 Cookie */
+HPSOCKET_API void __stdcall HP_HttpCookie_MGR_SetEnableThirdPartyCookie(BOOL bEnableThirdPartyCookie /*= TRUE*/);
+/* 检查是否允许第三方 Cookie */
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_IsEnableThirdPartyCookie();
+
+/* Cookie expires 字符串转换为整数 */
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_HLP_ParseExpires(LPCSTR lpszExpires, __time64_t* ptmExpires);
+/* 整数转换为 Cookie expires 字符串 */
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_HLP_MakeExpiresStr(char lpszBuff[], int* piBuffLen, __time64_t tmExpires);
+/* 生成 Cookie 字符串 */
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_HLP_ToString(char lpszBuff[], int* piBuffLen, LPCSTR lpszName, LPCSTR lpszValue, LPCSTR lpszDomain, LPCSTR lpszPath, int iMaxAge /*= -1*/, BOOL bHttpOnly /*= FALSE*/, BOOL bSecure /*= FALSE*/, int enSameSite /*= 0*/);
+/* 获取当前 UTC 时间 */
+HPSOCKET_API __time64_t __stdcall HP_HttpCookie_HLP_CurrentUTCTime();
+/* Max-Age -> expires */
+HPSOCKET_API __time64_t __stdcall HP_HttpCookie_HLP_MaxAgeToExpires(int iMaxAge);
+/* expires -> Max-Age */
+HPSOCKET_API int __stdcall HP_HttpCookie_HLP_ExpiresToMaxAge(__time64_t tmExpires);
 
 /*****************************************************************************************************************************************************/
 /*************************************************************** Global Function Exports *************************************************************/

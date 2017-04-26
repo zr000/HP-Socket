@@ -17,7 +17,6 @@ namespace HPSocketCS
             string str = "";
             try
             {
-
                 if (ptr != IntPtr.Zero)
                 {
                     str = Marshal.PtrToStringAnsi(ptr);

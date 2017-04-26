@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -309,8 +309,6 @@ void CTcpServer::CloseListenSocket()
 	{
 		::ManualCloseSocket(m_soListen);
 		m_soListen = INVALID_SOCKET;
-
-		::WaitWithMessageLoop(150);
 	}
 }
 
@@ -337,10 +335,10 @@ TSocketObj*	CTcpServer::GetFreeSocketObj(CONNID dwConnID, SOCKET soClient)
 	if(m_lsFreeSocket.TryLock(&pSocketObj, dwIndex))
 	{
 		if(::GetTimeGap32(pSocketObj->freeTime) >= m_dwFreeSocketObjLockTime)
-			m_lsFreeSocket.ReleaseLock(nullptr, dwIndex);
+			VERIFY(m_lsFreeSocket.ReleaseLock(nullptr, dwIndex));
 		else
 		{
-			m_lsFreeSocket.ReleaseLock(pSocketObj, dwIndex);
+			VERIFY(m_lsFreeSocket.ReleaseLock(pSocketObj, dwIndex));
 			pSocketObj = nullptr;
 		}
 	}
@@ -357,9 +355,9 @@ void CTcpServer::AddFreeSocketObj(TSocketObj* pSocketObj, EnSocketCloseFlag enFl
 		return;
 
 	CloseClientSocketObj(pSocketObj, enFlag, enOperation, iErrorCode);
-	TSocketObj::Release(pSocketObj);
 
 	m_bfActiveSockets.Remove(pSocketObj->connID);
+	TSocketObj::Release(pSocketObj);
 
 	if(!m_lsFreeSocket.TryPut(pSocketObj))
 	{
@@ -991,7 +989,7 @@ void CTcpServer::HandleAccept(SOCKET soListen, TBufferObj* pBufferObj)
 	CONNID dwConnID = 0;
 	SOCKET socket	= pBufferObj->client;
 
-	if(!m_bfActiveSockets.AcquireLock(dwConnID))
+	if(!HasStarted() || !m_bfActiveSockets.AcquireLock(dwConnID))
 	{
 		::ManualCloseSocket(socket, SD_BOTH);
 		AddFreeBufferObj(pBufferObj);

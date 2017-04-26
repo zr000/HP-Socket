@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -151,9 +151,9 @@ HPSOCKET_API IHttpClient* HP_Create_HttpsClient(IHttpClientListener* pListener)
 	return (IHttpClient*)(new CHttpsClient(pListener));
 }
 
-HPSOCKET_API IHttpSyncClient* HP_Create_HttpsSyncClient()
+HPSOCKET_API IHttpSyncClient* HP_Create_HttpsSyncClient(IHttpClientListener* pListener)
 {
-	return (IHttpSyncClient*)(new CHttpsSyncClient());
+	return (IHttpSyncClient*)(new CHttpsSyncClient(pListener));
 }
 
 HPSOCKET_API void HP_Destroy_HttpsServer(IHttpServer* pServer)

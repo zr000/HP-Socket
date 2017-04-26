@@ -5,6 +5,19 @@ using System.Text;
 
 namespace HPSocketCS
 {
+    public class TcpPackServer<T> : TcpPackServer
+    {
+        public new T GetExtra(IntPtr connId)
+        {
+            return base.GetExtra<T>(connId);
+        }
+
+        public bool SetExtra(IntPtr connId, T obj)
+        {
+            return base.SetExtra(connId, obj);
+        }
+    }
+
     public class TcpPackServer : TcpServer
     {
 

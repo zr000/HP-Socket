@@ -23,10 +23,8 @@ namespace TcpPullServer
         private delegate void ShowMsg(string msg);
         private ShowMsg AddMsgDelegate;
 
-        HPSocketCS.TcpPullServer server = new HPSocketCS.TcpPullServer();
-
-        HPSocketCS.Extra<ClientInfo> extra = new HPSocketCS.Extra<ClientInfo>();
-
+        HPSocketCS.TcpPullServer<ClientInfo> server = new HPSocketCS.TcpPullServer<ClientInfo>();
+        
         // 包头大小
         int pkgHeaderSize = Marshal.SizeOf(new PkgHeader());
 
@@ -171,7 +169,7 @@ namespace TcpPullServer
                 IsHeader = true,
                 Length = pkgHeaderSize,
             };
-            if (extra.Set(connId, clientInfo) == false)
+            if (server.SetExtra(connId, clientInfo) == false)
             {
                 AddMsg(string.Format(" > [{0},OnAccept] -> SetConnectionExtra fail", connId));
             }
@@ -193,7 +191,7 @@ namespace TcpPullServer
         {
             // 数据到达了
             // clientInfo 就是accept里传入的附加数据了
-            ClientInfo clientInfo = extra.Get(connId);
+            var clientInfo = server.GetExtra(connId);
             if (clientInfo == null)
             {
                 return HandleResult.Error;
@@ -256,7 +254,7 @@ namespace TcpPullServer
                         // 在后面赋值,因为前面需要用到pkgInfo.Length
                         pkgInfo.IsHeader = !pkgInfo.IsHeader;
                         pkgInfo.Length = required;
-                        if (extra.Set(connId, clientInfo) == false)
+                        if (server.SetExtra(connId, clientInfo) == false)
                         {
                             return HandleResult.Error;
                         }
@@ -291,7 +289,7 @@ namespace TcpPullServer
             // return HPSocketSdk.HandleResult.Ok;
 
             // 释放附加数据
-            if (extra.Remove(connId) == false)
+            if (server.RemoveExtra(connId) == false)
             {
                 AddMsg(string.Format(" > [{0},OnClose] -> SetConnectionExtra({0}, null) fail", connId));
             }

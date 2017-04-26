@@ -20,6 +20,20 @@ namespace HPSocketCS
         public delegate HandleResult OnPrepareConnectEventHandler(IntPtr connId /* IntPtr pClient */, IntPtr socket);
         public delegate HandleResult OnHandShakeEventHandler(IntPtr connId);
     }
+
+    public class TcpAgent<T> : TcpAgent
+    {
+        public new T GetExtra(IntPtr connId)
+        {
+            return base.GetExtra<T>(connId);
+        }
+
+        public bool SetExtra(IntPtr connId, T obj)
+        {
+            return base.SetExtra(connId, obj);
+        }
+    }
+
     public class TcpAgent : ConnectionExtra
     {
         protected IntPtr _pAgent = IntPtr.Zero;
@@ -590,6 +604,17 @@ namespace HPSocketCS
             get
             {
                 return Sdk.HP_Agent_GetConnectionCount(pAgent);
+            }
+        }
+
+        /// <summary>
+        /// 检测是否为安全连接（SSL/HTTPS）
+        /// </summary>
+        public bool IsSecure
+        {
+            get
+            {
+                return Sdk.HP_Agent_IsSecure(pAgent);
             }
         }
 

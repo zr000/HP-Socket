@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -59,6 +59,9 @@ public:
 	virtual BOOL SendWSMessage(BOOL bFinal, BYTE iReserved, BYTE iOperationCode, const BYTE lpszMask[4] = nullptr, BYTE* pData = nullptr, int iLength = 0, ULONGLONG ullBodyLen = 0);
 
 public:
+	virtual void SetUseCookie(BOOL bUseCookie)					{m_pCookieMgr = bUseCookie ? &g_CookieMgr : nullptr;}
+	virtual BOOL IsUseCookie()									{return m_pCookieMgr != nullptr;}
+
 	virtual void SetLocalVersion(EnHttpVersion enLocalVersion)	{m_enLocalVersion = enLocalVersion;}
 	virtual EnHttpVersion GetLocalVersion()						{return m_enLocalVersion;}
 
@@ -94,12 +97,6 @@ public:
 		{return m_objHttp.GetCookie(lpszName, lpszValue);}
 	virtual BOOL GetAllCookies(TCookie lpCookies[], DWORD& dwCount)
 		{return m_objHttp.GetAllCookies(lpCookies, dwCount);}
-	virtual BOOL AddCookie(LPCSTR lpszName, LPCSTR lpszValue, BOOL bRelpace = TRUE)
-		{return m_objHttp.AddCookie(lpszName, lpszValue, bRelpace);}
-	virtual BOOL DeleteCookie(LPCSTR lpszName)
-		{return m_objHttp.DeleteCookie(lpszName);}
-	virtual BOOL DeleteAllCookies()
-		{m_objHttp.DeleteAllCookies(); return TRUE;}
 
 	virtual USHORT GetStatusCode()
 		{return m_objHttp.GetStatusCode();}
@@ -107,7 +104,7 @@ public:
 	virtual BOOL GetWSMessageState(BOOL* lpbFinal, BYTE* lpiReserved, BYTE* lpiOperationCode, LPCBYTE* lpszMask, ULONGLONG* lpullBodyLen, ULONGLONG* lpullBodyRemain)
 		{return m_objHttp.GetWSMessageState(lpbFinal, lpiReserved, lpiOperationCode, lpszMask, lpullBodyLen, lpullBodyRemain);}
 
-protected:
+private:
 	virtual BOOL CheckParams();
 
 	virtual EnHandleResult DoFireReceive(ITcpClient* pSender, const BYTE* pData, int iLength)
@@ -153,10 +150,14 @@ protected:
 	EnHandleResult FireWSMessageComplete(IHttpClient* pSender)
 		{return m_pListener->OnWSMessageComplete(pSender, pSender->GetConnectionID());}
 
+	CCookieMgr* GetCookieMgr()						{return m_pCookieMgr;}
+	LPCSTR GetRemoteDomain(IHttpClient* pSender)	{LPCSTR lpszDomain; GetRemoteHost(&lpszDomain); return lpszDomain;}
+
 public:
 	CHttpClientT(IHttpClientListener* pListener)
 	: T					(pListener)
 	, m_pListener		(pListener)
+	, m_pCookieMgr		(&g_CookieMgr)
 	, m_enLocalVersion	(DEFAULT_HTTP_VERSION)
 	, m_objHttp			(FALSE, this, (IHttpClient*)this)
 	{
@@ -173,6 +174,7 @@ protected:
 
 private:
 	IHttpClientListener*	m_pListener;
+	CCookieMgr*				m_pCookieMgr;
 	EnHttpVersion			m_enLocalVersion;
 
 };
@@ -189,49 +191,43 @@ public:
 
 public:
 	virtual BOOL IsUpgrade()
-		{return m_objHttp2.IsUpgrade();}
+		{return m_pHttpObj->IsUpgrade();}
 	virtual BOOL IsKeepAlive()
-		{return m_objHttp2.IsKeepAlive();}
+		{return m_pHttpObj->IsKeepAlive();}
 	virtual USHORT GetVersion()
-		{return m_objHttp2.GetVersion();}
+		{return m_pHttpObj->GetVersion();}
 	virtual ULONGLONG GetContentLength()
-		{return m_objHttp2.GetContentLength();}
+		{return m_pHttpObj->GetContentLength();}
 	virtual LPCSTR GetContentType()
-		{return m_objHttp2.GetContentType();}
+		{return m_pHttpObj->GetContentType();}
 	virtual LPCSTR GetContentEncoding()
-		{return m_objHttp2.GetContentEncoding();}
+		{return m_pHttpObj->GetContentEncoding();}
 	virtual LPCSTR GetTransferEncoding()
-		{return m_objHttp2.GetTransferEncoding();}
+		{return m_pHttpObj->GetTransferEncoding();}
 	virtual EnHttpUpgradeType GetUpgradeType()
-		{return m_objHttp2.GetUpgradeType();}
+		{return m_pHttpObj->GetUpgradeType();}
 	virtual USHORT GetParseErrorCode(LPCSTR* lpszErrorDesc = nullptr)
-		{return m_objHttp2.GetParseErrorCode(lpszErrorDesc);}
+		{return m_pHttpObj->GetParseErrorCode(lpszErrorDesc);}
 
 	virtual BOOL GetHeader(LPCSTR lpszName, LPCSTR* lpszValue)
-		{return m_objHttp2.GetHeader(lpszName, lpszValue);}
+		{return m_pHttpObj->GetHeader(lpszName, lpszValue);}
 	virtual BOOL GetHeaders(LPCSTR lpszName, LPCSTR lpszValue[], DWORD& dwCount)
-		{return m_objHttp2.GetHeaders(lpszName, lpszValue, dwCount);}
+		{return m_pHttpObj->GetHeaders(lpszName, lpszValue, dwCount);}
 	virtual BOOL GetAllHeaders(THeader lpHeaders[], DWORD& dwCount)
-		{return m_objHttp2.GetAllHeaders(lpHeaders, dwCount);}
+		{return m_pHttpObj->GetAllHeaders(lpHeaders, dwCount);}
 	virtual BOOL GetAllHeaderNames(LPCSTR lpszName[], DWORD& dwCount)
-		{return m_objHttp2.GetAllHeaderNames(lpszName, dwCount);}
+		{return m_pHttpObj->GetAllHeaderNames(lpszName, dwCount);}
 
 	virtual BOOL GetCookie(LPCSTR lpszName, LPCSTR* lpszValue)
-		{return m_objHttp2.GetCookie(lpszName, lpszValue);}
+		{return m_pHttpObj->GetCookie(lpszName, lpszValue);}
 	virtual BOOL GetAllCookies(TCookie lpCookies[], DWORD& dwCount)
-		{return m_objHttp2.GetAllCookies(lpCookies, dwCount);}
-	virtual BOOL AddCookie(LPCSTR lpszName, LPCSTR lpszValue, BOOL bRelpace = TRUE)
-		{return __super::AddCookie(lpszName, lpszValue, bRelpace) && m_objHttp2.AddCookie(lpszName, lpszValue, bRelpace);}
-	virtual BOOL DeleteCookie(LPCSTR lpszName)
-		{return __super::DeleteCookie(lpszName) && m_objHttp2.DeleteCookie(lpszName);}
-	virtual BOOL DeleteAllCookies()
-		{__super::DeleteAllCookies(); m_objHttp2.DeleteAllCookies(); return TRUE;}
+		{return m_pHttpObj->GetAllCookies(lpCookies, dwCount);}
 
 	virtual USHORT GetStatusCode()
-		{return m_objHttp2.GetStatusCode();}
+		{return m_pHttpObj->GetStatusCode();}
 
 	virtual BOOL GetWSMessageState(BOOL* lpbFinal, BYTE* lpiReserved, BYTE* lpiOperationCode, LPCBYTE* lpszMask, ULONGLONG* lpullBodyLen, ULONGLONG* lpullBodyRemain)
-		{return m_objHttp2.GetWSMessageState(lpbFinal, lpiReserved, lpiOperationCode, lpszMask, lpullBodyLen, lpullBodyRemain);}
+		{return m_pHttpObj->GetWSMessageState(lpbFinal, lpiReserved, lpiOperationCode, lpszMask, lpullBodyLen, lpullBodyRemain);}
 
 public:
 	virtual BOOL OpenUrl(LPCSTR lpszMethod, LPCSTR lpszUrl, const THeader lpHeaders[] = nullptr, int iHeaderCount = 0, const BYTE* pBody = nullptr, int iLength = 0, BOOL bForceReconnect = FALSE);
@@ -250,7 +246,6 @@ private:
 	virtual EnHandleResult OnHandShake(ITcpClient* pSender, CONNID dwConnID);
 	virtual EnHandleResult OnClose(ITcpClient* pSender, CONNID dwConnID, EnSocketOperation enOperation, int iErrorCode);
 
-	virtual EnHttpParseResult OnHeadersComplete(IHttpClient* pSender, CONNID dwConnID);
 	virtual EnHttpParseResult OnBody(IHttpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength);
 	virtual EnHttpParseResult OnMessageComplete(IHttpClient* pSender, CONNID dwConnID);
 	virtual EnHttpParseResult OnUpgrade(IHttpClient* pSender, CONNID dwConnID, EnHttpUpgradeType enUpgradeType);
@@ -259,15 +254,30 @@ private:
 	virtual EnHandleResult OnWSMessageBody(IHttpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength);
 	virtual EnHandleResult OnWSMessageComplete(IHttpClient* pSender, CONNID dwConnID);
 
+	virtual EnHandleResult OnPrepareConnect(ITcpClient* pSender, CONNID dwConnID, SOCKET socket);
+	virtual EnHandleResult OnConnect(ITcpClient* pSender, CONNID dwConnID);
+	virtual EnHandleResult OnSend(ITcpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength);
+
+	virtual EnHttpParseResult OnMessageBegin(IHttpClient* pSender, CONNID dwConnID);
+	virtual EnHttpParseResult OnStatusLine(IHttpClient* pSender, CONNID dwConnID, USHORT usStatusCode, LPCSTR lpszDesc);
+	virtual EnHttpParseResult OnHeader(IHttpClient* pSender, CONNID dwConnID, LPCSTR lpszName, LPCSTR lpszValue);
+	virtual EnHttpParseResult OnHeadersComplete(IHttpClient* pSender, CONNID dwConnID);
+	virtual EnHttpParseResult OnChunkHeader(IHttpClient* pSender, CONNID dwConnID, int iLength);
+	virtual EnHttpParseResult OnChunkComplete(IHttpClient* pSender, CONNID dwConnID);
+
+	virtual EnHandleResult OnWSMessageHeader(IHttpClient* pSender, CONNID dwConnID, BOOL bFinal, BYTE iReserved, BYTE iOperationCode, const BYTE lpszMask[4], ULONGLONG ullBodyLen);
+
+
 private:
-	void ResetRequestEvent();
-	void SetRequestEvent(EnHttpSyncRequestProgress enProgress);
+	void SetRequestEvent(EnHttpSyncRequestProgress enProgress, BOOL bCopyHttpObj = TRUE);
 
 public:
-	CHttpSyncClientT()
+	CHttpSyncClientT(IHttpClientListener* pListener = nullptr)
 	: CHttpClientT			(this)
 	, m_enProgress			(HSRP_DONE)
 	, m_objHttp2			(FALSE, this, (IHttpClient*)this)
+	, m_pHttpObj			(nullptr)
+	, m_pListener2			(pListener)
 	, m_dwConnectTimeout	(DEFAULT_HTTP_SYNC_CONNECT_TIMEOUT)
 	, m_dwRequestTimeout	(DEFAULT_HTTP_SYNC_REQUEST_TIMEOUT)
 	{
@@ -285,6 +295,9 @@ private:
 
 	CEvt		m_evWait;
 	THttpObj	m_objHttp2;
+
+	THttpObj*				m_pHttpObj;
+	IHttpClientListener*	m_pListener2;
 
 	EnHttpSyncRequestProgress		m_enProgress;
 	CBufferPtrT<BYTE, 16 * 1024>	m_szBuffer;

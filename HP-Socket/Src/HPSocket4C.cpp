@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -49,7 +49,7 @@
 	#pragma comment(linker, "/EXPORT:Create_HP_HttpClientListener=_Create_HP_HttpClientListener@0")
 	#pragma comment(linker, "/EXPORT:Create_HP_HttpServer=_Create_HP_HttpServer@4")
 	#pragma comment(linker, "/EXPORT:Create_HP_HttpServerListener=_Create_HP_HttpServerListener@0")
-	#pragma comment(linker, "/EXPORT:Create_HP_HttpSyncClient=_Create_HP_HttpSyncClient@0")
+	#pragma comment(linker, "/EXPORT:Create_HP_HttpSyncClient=_Create_HP_HttpSyncClient@4")
 	#pragma comment(linker, "/EXPORT:Create_HP_TcpAgent=_Create_HP_TcpAgent@4")
 	#pragma comment(linker, "/EXPORT:Create_HP_TcpAgentListener=_Create_HP_TcpAgentListener@0")
 	#pragma comment(linker, "/EXPORT:Create_HP_TcpClient=_Create_HP_TcpClient@4")
@@ -131,6 +131,7 @@
 	#pragma comment(linker, "/EXPORT:HP_Agent_GetWorkerThreadCount=_HP_Agent_GetWorkerThreadCount@4")
 	#pragma comment(linker, "/EXPORT:HP_Agent_HasStarted=_HP_Agent_HasStarted@4")
 	#pragma comment(linker, "/EXPORT:HP_Agent_IsMarkSilence=_HP_Agent_IsMarkSilence@4")
+	#pragma comment(linker, "/EXPORT:HP_Agent_IsSecure=_HP_Agent_IsSecure@4")
 	#pragma comment(linker, "/EXPORT:HP_Agent_Send=_HP_Agent_Send@16")
 	#pragma comment(linker, "/EXPORT:HP_Agent_SendPackets=_HP_Agent_SendPackets@16")
 	#pragma comment(linker, "/EXPORT:HP_Agent_SendPart=_HP_Agent_SendPart@20")
@@ -157,6 +158,7 @@
 	#pragma comment(linker, "/EXPORT:HP_Client_GetRemoteHost=_HP_Client_GetRemoteHost@16")
 	#pragma comment(linker, "/EXPORT:HP_Client_GetState=_HP_Client_GetState@4")
 	#pragma comment(linker, "/EXPORT:HP_Client_HasStarted=_HP_Client_HasStarted@4")
+	#pragma comment(linker, "/EXPORT:HP_Client_IsSecure=_HP_Client_IsSecure@4")
 	#pragma comment(linker, "/EXPORT:HP_Client_Send=_HP_Client_Send@12")
 	#pragma comment(linker, "/EXPORT:HP_Client_SendPackets=_HP_Client_SendPackets@12")
 	#pragma comment(linker, "/EXPORT:HP_Client_SendPart=_HP_Client_SendPart@16")
@@ -168,9 +170,6 @@
 	#pragma comment(linker, "/EXPORT:HP_Client_Stop=_HP_Client_Stop@4")
 	#pragma comment(linker, "/EXPORT:HP_GetHPSocketVersion=_HP_GetHPSocketVersion@0")
 	#pragma comment(linker, "/EXPORT:HP_GetSocketErrorDesc=_HP_GetSocketErrorDesc@4")
-	#pragma comment(linker, "/EXPORT:HP_HttpAgent_AddCookie=_HP_HttpAgent_AddCookie@20")
-	#pragma comment(linker, "/EXPORT:HP_HttpAgent_DeleteAllCookies=_HP_HttpAgent_DeleteAllCookies@8")
-	#pragma comment(linker, "/EXPORT:HP_HttpAgent_DeleteCookie=_HP_HttpAgent_DeleteCookie@12")
 	#pragma comment(linker, "/EXPORT:HP_HttpAgent_GetAllCookies=_HP_HttpAgent_GetAllCookies@16")
 	#pragma comment(linker, "/EXPORT:HP_HttpAgent_GetAllHeaderNames=_HP_HttpAgent_GetAllHeaderNames@16")
 	#pragma comment(linker, "/EXPORT:HP_HttpAgent_GetAllHeaders=_HP_HttpAgent_GetAllHeaders@16")
@@ -189,6 +188,7 @@
 	#pragma comment(linker, "/EXPORT:HP_HttpAgent_GetWSMessageState=_HP_HttpAgent_GetWSMessageState@32")
 	#pragma comment(linker, "/EXPORT:HP_HttpAgent_IsKeepAlive=_HP_HttpAgent_IsKeepAlive@8")
 	#pragma comment(linker, "/EXPORT:HP_HttpAgent_IsUpgrade=_HP_HttpAgent_IsUpgrade@8")
+	#pragma comment(linker, "/EXPORT:HP_HttpAgent_IsUseCookie=_HP_HttpAgent_IsUseCookie@4")
 	#pragma comment(linker, "/EXPORT:HP_HttpAgent_SendConnect=_HP_HttpAgent_SendConnect@20")
 	#pragma comment(linker, "/EXPORT:HP_HttpAgent_SendDelete=_HP_HttpAgent_SendDelete@20")
 	#pragma comment(linker, "/EXPORT:HP_HttpAgent_SendGet=_HP_HttpAgent_SendGet@20")
@@ -202,9 +202,7 @@
 	#pragma comment(linker, "/EXPORT:HP_HttpAgent_SendTrace=_HP_HttpAgent_SendTrace@20")
 	#pragma comment(linker, "/EXPORT:HP_HttpAgent_SendWSMessage=_HP_HttpAgent_SendWSMessage@40")
 	#pragma comment(linker, "/EXPORT:HP_HttpAgent_SetLocalVersion=_HP_HttpAgent_SetLocalVersion@8")
-	#pragma comment(linker, "/EXPORT:HP_HttpClient_AddCookie=_HP_HttpClient_AddCookie@16")
-	#pragma comment(linker, "/EXPORT:HP_HttpClient_DeleteAllCookies=_HP_HttpClient_DeleteAllCookies@4")
-	#pragma comment(linker, "/EXPORT:HP_HttpClient_DeleteCookie=_HP_HttpClient_DeleteCookie@8")
+	#pragma comment(linker, "/EXPORT:HP_HttpAgent_SetUseCookie=_HP_HttpAgent_SetUseCookie@8")
 	#pragma comment(linker, "/EXPORT:HP_HttpClient_GetAllCookies=_HP_HttpClient_GetAllCookies@12")
 	#pragma comment(linker, "/EXPORT:HP_HttpClient_GetAllHeaderNames=_HP_HttpClient_GetAllHeaderNames@12")
 	#pragma comment(linker, "/EXPORT:HP_HttpClient_GetAllHeaders=_HP_HttpClient_GetAllHeaders@12")
@@ -223,6 +221,7 @@
 	#pragma comment(linker, "/EXPORT:HP_HttpClient_GetWSMessageState=_HP_HttpClient_GetWSMessageState@28")
 	#pragma comment(linker, "/EXPORT:HP_HttpClient_IsKeepAlive=_HP_HttpClient_IsKeepAlive@4")
 	#pragma comment(linker, "/EXPORT:HP_HttpClient_IsUpgrade=_HP_HttpClient_IsUpgrade@4")
+	#pragma comment(linker, "/EXPORT:HP_HttpClient_IsUseCookie=_HP_HttpClient_IsUseCookie@4")
 	#pragma comment(linker, "/EXPORT:HP_HttpClient_SendConnect=_HP_HttpClient_SendConnect@16")
 	#pragma comment(linker, "/EXPORT:HP_HttpClient_SendDelete=_HP_HttpClient_SendDelete@16")
 	#pragma comment(linker, "/EXPORT:HP_HttpClient_SendGet=_HP_HttpClient_SendGet@16")
@@ -236,6 +235,21 @@
 	#pragma comment(linker, "/EXPORT:HP_HttpClient_SendTrace=_HP_HttpClient_SendTrace@16")
 	#pragma comment(linker, "/EXPORT:HP_HttpClient_SendWSMessage=_HP_HttpClient_SendWSMessage@36")
 	#pragma comment(linker, "/EXPORT:HP_HttpClient_SetLocalVersion=_HP_HttpClient_SetLocalVersion@8")
+	#pragma comment(linker, "/EXPORT:HP_HttpClient_SetUseCookie=_HP_HttpClient_SetUseCookie@8")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_HLP_CurrentUTCTime=_HP_HttpCookie_HLP_CurrentUTCTime@0")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_HLP_ExpiresToMaxAge=_HP_HttpCookie_HLP_ExpiresToMaxAge@8")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_HLP_MakeExpiresStr=_HP_HttpCookie_HLP_MakeExpiresStr@16")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_HLP_MaxAgeToExpires=_HP_HttpCookie_HLP_MaxAgeToExpires@4")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_HLP_ParseExpires=_HP_HttpCookie_HLP_ParseExpires@8")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_HLP_ToString=_HP_HttpCookie_HLP_ToString@40")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_MGR_ClearCookies=_HP_HttpCookie_MGR_ClearCookies@8")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_MGR_DeleteCookie=_HP_HttpCookie_MGR_DeleteCookie@12")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_MGR_IsEnableThirdPartyCookie=_HP_HttpCookie_MGR_IsEnableThirdPartyCookie@0")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_MGR_LoadFromFile=_HP_HttpCookie_MGR_LoadFromFile@8")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_MGR_RemoveExpiredCookies=_HP_HttpCookie_MGR_RemoveExpiredCookies@8")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_MGR_SaveToFile=_HP_HttpCookie_MGR_SaveToFile@8")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_MGR_SetCookie=_HP_HttpCookie_MGR_SetCookie@36")
+	#pragma comment(linker, "/EXPORT:HP_HttpCookie_MGR_SetEnableThirdPartyCookie=_HP_HttpCookie_MGR_SetEnableThirdPartyCookie@4")
 	#pragma comment(linker, "/EXPORT:HP_HttpServer_GetAllCookies=_HP_HttpServer_GetAllCookies@16")
 	#pragma comment(linker, "/EXPORT:HP_HttpServer_GetAllHeaderNames=_HP_HttpServer_GetAllHeaderNames@16")
 	#pragma comment(linker, "/EXPORT:HP_HttpServer_GetAllHeaders=_HP_HttpServer_GetAllHeaders@16")
@@ -296,6 +310,7 @@
 	#pragma comment(linker, "/EXPORT:HP_Server_GetWorkerThreadCount=_HP_Server_GetWorkerThreadCount@4")
 	#pragma comment(linker, "/EXPORT:HP_Server_HasStarted=_HP_Server_HasStarted@4")
 	#pragma comment(linker, "/EXPORT:HP_Server_IsMarkSilence=_HP_Server_IsMarkSilence@4")
+	#pragma comment(linker, "/EXPORT:HP_Server_IsSecure=_HP_Server_IsSecure@4")
 	#pragma comment(linker, "/EXPORT:HP_Server_Send=_HP_Server_Send@16")
 	#pragma comment(linker, "/EXPORT:HP_Server_SendPackets=_HP_Server_SendPackets@16")
 	#pragma comment(linker, "/EXPORT:HP_Server_SendPart=_HP_Server_SendPart@20")
@@ -953,6 +968,11 @@ HPSOCKET_API BOOL __stdcall HP_Server_GetConnectionExtra(HP_Server pServer, HP_C
 	return C_HP_Object::ToSecond<IServer>(pServer)->GetConnectionExtra(dwConnID, ppExtra);
 }
 
+HPSOCKET_API BOOL __stdcall HP_Server_IsSecure(HP_Server pServer)
+{
+	return C_HP_Object::ToSecond<IServer>(pServer)->IsSecure();
+}
+
 HPSOCKET_API BOOL __stdcall HP_Server_HasStarted(HP_Server pServer)
 {
 	return C_HP_Object::ToSecond<IServer>(pServer)->HasStarted();
@@ -1268,6 +1288,11 @@ HPSOCKET_API BOOL __stdcall HP_Agent_GetConnectionExtra(HP_Agent pAgent, HP_CONN
 	return C_HP_Object::ToSecond<IAgent>(pAgent)->GetConnectionExtra(dwConnID, ppExtra);
 }
 
+HPSOCKET_API BOOL __stdcall HP_Agent_IsSecure(HP_Agent pAgent)
+{
+	return C_HP_Object::ToSecond<IAgent>(pAgent)->IsSecure();
+}
+
 HPSOCKET_API BOOL __stdcall HP_Agent_HasStarted(HP_Agent pAgent)
 {
 	return C_HP_Object::ToSecond<IAgent>(pAgent)->HasStarted();
@@ -1513,6 +1538,11 @@ HPSOCKET_API void __stdcall HP_Client_SetExtra(HP_Client pClient, PVOID pExtra)
 HPSOCKET_API PVOID __stdcall HP_Client_GetExtra(HP_Client pClient)
 {
 	return C_HP_Object::ToSecond<IClient>(pClient)->GetExtra();
+}
+
+HPSOCKET_API BOOL __stdcall HP_Client_IsSecure(HP_Client pClient)
+{
+	return C_HP_Object::ToSecond<IClient>(pClient)->IsSecure();
 }
 
 HPSOCKET_API BOOL __stdcall HP_Client_HasStarted(HP_Client pClient)
@@ -1840,7 +1870,7 @@ HPSOCKET_API USHORT __stdcall HP_TcpPackClient_GetPackHeaderFlag(HP_TcpPackClien
 typedef C_HP_ObjectT<CHttpServer, IHttpServerListener, sizeof(IComplexHttpResponder)>	C_HP_HttpServer;
 typedef C_HP_ObjectT<CHttpAgent, IHttpAgentListener, sizeof(IComplexHttpRequester)>		C_HP_HttpAgent;
 typedef C_HP_ObjectT<CHttpClient, IHttpClientListener, sizeof(IHttpRequester)>			C_HP_HttpClient;
-typedef C_HP_ObjectT<CHttpSyncClient, void, sizeof(IHttpSyncRequester)>					C_HP_HttpSyncClient;
+typedef C_HP_ObjectT<CHttpSyncClient, IHttpClientListener, sizeof(IHttpSyncRequester)>	C_HP_HttpSyncClient;
 
 /****************************************************/
 /***************** HTTP 对象创建函数 *****************/
@@ -1860,9 +1890,9 @@ HPSOCKET_API HP_HttpClient __stdcall Create_HP_HttpClient(HP_HttpClientListener 
 	return (HP_HttpClient)(new C_HP_HttpClient((IHttpClientListener*)pListener));
 }
 
-HPSOCKET_API HP_HttpSyncClient __stdcall Create_HP_HttpSyncClient()
+HPSOCKET_API HP_HttpSyncClient __stdcall Create_HP_HttpSyncClient(HP_HttpClientListener pListener)
 {
-	return (HP_HttpSyncClient)(new C_HP_HttpSyncClient());
+	return (HP_HttpSyncClient)(new C_HP_HttpSyncClient((IHttpClientListener*)pListener));
 }
 
 HPSOCKET_API void __stdcall Destroy_HP_HttpServer(HP_HttpServer pServer)
@@ -2512,6 +2542,16 @@ HPSOCKET_API BOOL __stdcall HP_HttpAgent_GetAllHeaderNames(HP_HttpAgent pAgent, 
 	return C_HP_Object::ToFirst<IHttpAgent>(pAgent)->GetAllHeaderNames(dwConnID, lpszName, *pdwCount);
 }
 
+HPSOCKET_API void __stdcall HP_HttpAgent_SetUseCookie(HP_HttpAgent pAgent, BOOL bUseCookie)
+{
+	C_HP_Object::ToFirst<IHttpAgent>(pAgent)->SetUseCookie(bUseCookie);
+}
+
+HPSOCKET_API BOOL __stdcall HP_HttpAgent_IsUseCookie(HP_HttpAgent pAgent)
+{
+	return C_HP_Object::ToFirst<IHttpAgent>(pAgent)->IsUseCookie();
+}
+
 HPSOCKET_API BOOL __stdcall HP_HttpAgent_GetCookie(HP_HttpAgent pAgent, HP_CONNID dwConnID, LPCSTR lpszName, LPCSTR* lpszValue)
 {
 	return C_HP_Object::ToFirst<IHttpAgent>(pAgent)->GetCookie(dwConnID, lpszName, lpszValue);
@@ -2520,21 +2560,6 @@ HPSOCKET_API BOOL __stdcall HP_HttpAgent_GetCookie(HP_HttpAgent pAgent, HP_CONNI
 HPSOCKET_API BOOL __stdcall HP_HttpAgent_GetAllCookies(HP_HttpAgent pAgent, HP_CONNID dwConnID, HP_TCookie lpCookies[], DWORD* pdwCount)
 {
 	return C_HP_Object::ToFirst<IHttpAgent>(pAgent)->GetAllCookies(dwConnID, lpCookies, *pdwCount);
-}
-
-HPSOCKET_API BOOL __stdcall HP_HttpAgent_AddCookie(HP_HttpAgent pAgent, HP_CONNID dwConnID, LPCSTR lpszName, LPCSTR lpszValue, BOOL bRelpace)
-{
-	return C_HP_Object::ToFirst<IHttpAgent>(pAgent)->AddCookie(dwConnID, lpszName, lpszValue, bRelpace);
-}
-
-HPSOCKET_API BOOL __stdcall HP_HttpAgent_DeleteCookie(HP_HttpAgent pAgent, HP_CONNID dwConnID, LPCSTR lpszName)
-{
-	return C_HP_Object::ToFirst<IHttpAgent>(pAgent)->DeleteCookie(dwConnID, lpszName);
-}
-
-HPSOCKET_API BOOL __stdcall HP_HttpAgent_DeleteAllCookies(HP_HttpAgent pAgent, HP_CONNID dwConnID)
-{
-	return C_HP_Object::ToFirst<IHttpAgent>(pAgent)->DeleteAllCookies(dwConnID);
 }
 
 HPSOCKET_API BOOL __stdcall HP_HttpAgent_GetWSMessageState(HP_HttpAgent pAgent, HP_CONNID dwConnID, BOOL* lpbFinal, BYTE* lpiReserved, BYTE* lpiOperationCode, LPCBYTE* lpszMask, ULONGLONG* lpullBodyLen, ULONGLONG* lpullBodyRemain)
@@ -2688,6 +2713,16 @@ HPSOCKET_API BOOL __stdcall HP_HttpClient_GetAllHeaderNames(HP_HttpClient pClien
 	return C_HP_Object::ToFirst<IHttpClient>(pClient)->GetAllHeaderNames(lpszName, *pdwCount);
 }
 
+HPSOCKET_API void __stdcall HP_HttpClient_SetUseCookie(HP_HttpClient pClient, BOOL bUseCookie)
+{
+	C_HP_Object::ToFirst<IHttpClient>(pClient)->SetUseCookie(bUseCookie);
+}
+
+HPSOCKET_API BOOL __stdcall HP_HttpClient_IsUseCookie(HP_HttpClient pClient)
+{
+	return C_HP_Object::ToFirst<IHttpClient>(pClient)->IsUseCookie();
+}
+
 HPSOCKET_API BOOL __stdcall HP_HttpClient_GetCookie(HP_HttpClient pClient, LPCSTR lpszName, LPCSTR* lpszValue)
 {
 	return C_HP_Object::ToFirst<IHttpClient>(pClient)->GetCookie(lpszName, lpszValue);
@@ -2696,21 +2731,6 @@ HPSOCKET_API BOOL __stdcall HP_HttpClient_GetCookie(HP_HttpClient pClient, LPCST
 HPSOCKET_API BOOL __stdcall HP_HttpClient_GetAllCookies(HP_HttpClient pClient, HP_TCookie lpCookies[], DWORD* pdwCount)
 {
 	return C_HP_Object::ToFirst<IHttpClient>(pClient)->GetAllCookies(lpCookies, *pdwCount);
-}
-
-HPSOCKET_API BOOL __stdcall HP_HttpClient_AddCookie(HP_HttpClient pClient, LPCSTR lpszName, LPCSTR lpszValue, BOOL bRelpace)
-{
-	return C_HP_Object::ToFirst<IHttpClient>(pClient)->AddCookie(lpszName, lpszValue, bRelpace);
-}
-
-HPSOCKET_API BOOL __stdcall HP_HttpClient_DeleteCookie(HP_HttpClient pClient, LPCSTR lpszName)
-{
-	return C_HP_Object::ToFirst<IHttpClient>(pClient)->DeleteCookie(lpszName);
-}
-
-HPSOCKET_API BOOL __stdcall HP_HttpClient_DeleteAllCookies(HP_HttpClient pClient)
-{
-	return C_HP_Object::ToFirst<IHttpClient>(pClient)->DeleteAllCookies();
 }
 
 HPSOCKET_API BOOL __stdcall HP_HttpClient_GetWSMessageState(HP_HttpClient pClient, BOOL* lpbFinal, BYTE* lpiReserved, BYTE* lpiOperationCode, LPCBYTE* lpszMask, ULONGLONG* lpullBodyLen, ULONGLONG* lpullBodyRemain)
@@ -2757,6 +2777,79 @@ HPSOCKET_API DWORD __stdcall HP_HttpSyncClient_GetRequestTimeout(HP_HttpSyncClie
 HPSOCKET_API BOOL __stdcall HP_HttpSyncClient_GetResponseBody(HP_HttpSyncClient pClient, LPCBYTE* lpszBody, int* piLength)
 {
 	return C_HP_Object::ToFirst<IHttpSyncClient>(pClient)->GetResponseBody(lpszBody, piLength);
+}
+
+/**************************************************************************/
+/*************************** HTTP Cookie 管理方法 **************************/
+
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_LoadFromFile(LPCSTR lpszFile, BOOL bKeepExists)
+{
+	return g_CookieMgr.LoadFromFile(lpszFile, bKeepExists);
+}
+
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_SaveToFile(LPCSTR lpszFile, BOOL bKeepExists)
+{
+	return g_CookieMgr.SaveToFile(lpszFile, bKeepExists);
+}
+
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_ClearCookies(LPCSTR lpszDomain, LPCSTR lpszPath)
+{
+	return g_CookieMgr.ClearCookies(lpszDomain, lpszPath);
+}
+
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_RemoveExpiredCookies(LPCSTR lpszDomain, LPCSTR lpszPath)
+{
+	return g_CookieMgr.RemoveExpiredCookies(lpszDomain, lpszPath);
+}
+
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_SetCookie(LPCSTR lpszName, LPCSTR lpszValue, LPCSTR lpszDomain, LPCSTR lpszPath, int iMaxAge, BOOL bHttpOnly, BOOL bSecure, int enSameSite, BOOL bOnlyUpdateValueIfExists)
+{
+	return g_CookieMgr.SetCookie(lpszName, lpszValue, lpszDomain, lpszPath, iMaxAge, bHttpOnly, bSecure, (CCookie::EnSameSite)enSameSite, bOnlyUpdateValueIfExists);
+}
+
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_DeleteCookie(LPCSTR lpszDomain, LPCSTR lpszPath, LPCSTR lpszName)
+{
+	return g_CookieMgr.DeleteCookie(lpszDomain, lpszPath, lpszName);
+}
+
+HPSOCKET_API void __stdcall HP_HttpCookie_MGR_SetEnableThirdPartyCookie(BOOL bEnableThirdPartyCookie)
+{
+	g_CookieMgr.SetEnableThirdPartyCookie(bEnableThirdPartyCookie);
+}
+
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_MGR_IsEnableThirdPartyCookie()
+{
+	return g_CookieMgr.IsEnableThirdPartyCookie();
+}
+
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_HLP_ParseExpires(LPCSTR lpszExpires, __time64_t* ptmExpires)
+{
+	return CCookie::ParseExpires(lpszExpires, *ptmExpires);
+}
+
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_HLP_MakeExpiresStr(char lpszBuff[], int* piBuffLen, __time64_t tmExpires)
+{
+	return CCookie::MakeExpiresStr(lpszBuff, *piBuffLen, tmExpires);
+}
+
+HPSOCKET_API BOOL __stdcall HP_HttpCookie_HLP_ToString(char lpszBuff[], int* piBuffLen, LPCSTR lpszName, LPCSTR lpszValue, LPCSTR lpszDomain, LPCSTR lpszPath, int iMaxAge, BOOL bHttpOnly, BOOL bSecure, int enSameSite)
+{
+	return CCookie::ToString(lpszBuff, *piBuffLen, lpszName, lpszValue, lpszDomain, lpszPath, iMaxAge, bHttpOnly, bSecure, (CCookie::EnSameSite)enSameSite);
+}
+
+HPSOCKET_API __time64_t __stdcall HP_HttpCookie_HLP_CurrentUTCTime()
+{
+	return CCookie::CurrentUTCTime();
+}
+
+HPSOCKET_API __time64_t __stdcall HP_HttpCookie_HLP_MaxAgeToExpires(int iMaxAge)
+{
+	return CCookie::MaxAgeToExpires(iMaxAge);
+}
+
+HPSOCKET_API int __stdcall HP_HttpCookie_HLP_ExpiresToMaxAge(__time64_t tmExpires)
+{
+	return CCookie::ExpiresToMaxAge(tmExpires);
 }
 
 /*****************************************************************************************************************************************************/

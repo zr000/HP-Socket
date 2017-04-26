@@ -48,14 +48,31 @@ protected:
 private:
 	void SetAppState(EnAppState state);
 	BOOL CheckStarted(BOOL bRestart = TRUE);
-	static void CheckSetCookie(HP_HttpSyncClient pSender);
 	static CStringA GetHeaderSummary(HP_HttpSyncClient pSender, LPCSTR lpszSep = "  ", int iSepCount = 0, BOOL bWithContentLength = TRUE);
+
+private:
+	static En_HP_HandleResult __stdcall OnConnect(HP_Client pSender, CONNID dwConnID);
+	static En_HP_HandleResult __stdcall OnClose(HP_Client pSender, CONNID dwConnID, EnSocketOperation enOperation, int iErrorCode);
+
+	static En_HP_HttpParseResult __stdcall OnHeader(HP_HttpClient pSender, CONNID dwConnID, LPCSTR lpszName, LPCSTR lpszValue);
+	static En_HP_HttpParseResult __stdcall OnHeadersComplete(HP_HttpClient pSender, CONNID dwConnID);
+	static En_HP_HttpParseResult __stdcall OnBody(HP_HttpClient pSender, CONNID dwConnID, const BYTE* pData, int iLength);
+	static En_HP_HttpParseResult __stdcall OnChunkHeader(HP_HttpClient pSender, CONNID dwConnID, int iLength);
+	static En_HP_HttpParseResult __stdcall OnChunkComplete(HP_HttpClient pSender, CONNID dwConnID);
+	static En_HP_HttpParseResult __stdcall OnMessageComplete(HP_HttpClient pSender, CONNID dwConnID);
+	static En_HP_HttpParseResult __stdcall OnUpgrade(HP_HttpClient pSender, CONNID dwConnID, EnHttpUpgradeType enUpgradeType);
+
+	static En_HP_HandleResult __stdcall OnWSMessageHeader(HP_HttpClient pSender, HP_CONNID dwConnID, BOOL bFinal, BYTE iReserved, BYTE iOperationCode, const BYTE lpszMask[4], ULONGLONG ullBodyLen);
+	static En_HP_HandleResult __stdcall OnWSMessageBody(HP_HttpClient pSender, HP_CONNID dwConnID, const BYTE* pData, int iLength);
+	static En_HP_HandleResult __stdcall OnWSMessageComplete(HP_HttpClient pSender, HP_CONNID dwConnID);
 
 private:
 	CButton m_Send;
 	CListBox m_Info;
 	CEdit m_Address;
 	CEdit m_Port;
+	CButton m_UseCookie;
+	CButton m_Listener;
 	CButton m_Start;
 	CButton m_Stop;
 	CComboBox m_Method;
@@ -67,10 +84,13 @@ private:
 	CListBox m_Headers;
 	CEdit m_Body;
 
+	BOOL m_bUseCookie;
+	BOOL m_bListener;
 	BOOL m_bWebSocket;
 	EnAppState m_enState;
 
 	static CClientDlg* m_spThis;
 
+	HP_HttpClientListener m_HttpClientListener;
 	HP_HttpSyncClient m_HttpSyncClient;
 };

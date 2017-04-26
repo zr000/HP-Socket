@@ -18,6 +18,15 @@ CClientDlg::CClientDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CClientDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+
+	VERIFY(g_SSL.Initialize(SSL_SM_CLIENT, SSL_VM_NONE, g_c_lpszPemCertFile, g_c_lpszPemKeyFile, g_c_lpszKeyPasswod, g_c_lpszCAPemCertFileOrPath));
+	VERIFY(g_CookieMgr.LoadFromFile(CT2A(g_lpszDefaultCookieFile), FALSE) || ::GetLastError() == ERROR_FILE_NOT_FOUND);
+}
+
+CClientDlg::~CClientDlg()
+{
+	g_CookieMgr.SaveToFile(CT2A(g_lpszDefaultCookieFile), TRUE);
+	g_SSL.Cleanup();
 }
 
 void CClientDlg::DoDataExchange(CDataExchange* pDX)
@@ -27,6 +36,7 @@ void CClientDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_INFO, m_Info);
 	DDX_Control(pDX, IDC_ADDRESS, m_Address);
 	DDX_Control(pDX, IDC_PORT, m_Port);
+	DDX_Control(pDX, IDC_USE_COOKIE, m_UseCookie);
 	DDX_Control(pDX, IDC_ASYNC, m_Async);
 	DDX_Control(pDX, IDC_START, m_Start);
 	DDX_Control(pDX, IDC_STOP, m_Stop);
@@ -72,6 +82,7 @@ BOOL CClientDlg::OnInitDialog()
 	m_Path.SetWindowText(DEFAULT_PATH);
 	m_Address.SetWindowText(DEFAULT_ADDRESS);
 	m_Port.SetWindowText(DEFAULT_PORT);
+	m_UseCookie.SetCheck(BST_CHECKED);
 	m_Async.SetCheck(BST_CHECKED);
 
 	::SetMainWnd(this);
@@ -79,6 +90,7 @@ BOOL CClientDlg::OnInitDialog()
 	SetAppState(ST_STOPPED);
 
 	m_bWebSocket = FALSE;
+	m_bUseCookie = FALSE;
 	m_bAsyncConn = FALSE;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -140,6 +152,7 @@ void CClientDlg::SetAppState(EnAppState state)
 	if(this->GetSafeHwnd() == nullptr)
 		return;
 
+	m_UseCookie.EnableWindow(m_enState == ST_STOPPED);
 	m_Async.EnableWindow(m_enState == ST_STOPPED);
 	m_Start.EnableWindow(m_enState == ST_STOPPED);
 	m_Stop.EnableWindow(m_enState == ST_STARTED);
@@ -297,15 +310,6 @@ void CClientDlg::OnBnClickedStart()
 {
 	SetAppState(ST_STARTING);
 
-	g_SSL.Cleanup();
-	if(!g_SSL.Initialize(SSL_SM_CLIENT, SSL_VM_NONE, g_c_lpszPemCertFile, g_c_lpszPemKeyFile, g_c_lpszKeyPasswod, g_c_lpszCAPemCertFileOrPath))
-	{
-		::LogClientStartFail(::GetLastError(), _T("initialize SSL env fail"));
-		SetAppState(ST_STOPPED);
-
-		return;
-	}
-
 	CString strAddress;
 	CString strPort;
 
@@ -313,13 +317,17 @@ void CClientDlg::OnBnClickedStart()
 	m_Port.GetWindowText(strPort);
 
 	USHORT usPort	= (USHORT)_ttoi(strPort);
-	m_bAsyncConn	= m_Async.GetCheck();
 	BOOL isHttp		= m_Schema.GetCurSel() == 0;
+
+	m_bUseCookie	= m_UseCookie.GetCheck() == BST_CHECKED;
+	m_bAsyncConn	= m_Async.GetCheck() == BST_CHECKED;
 
 	if(isHttp)
 		m_pClient.reset((IHttpClient*)(new CHttpClient(this)));
 	else
 		m_pClient.reset((IHttpClient*)(new CHttpsClient(this)));
+
+	m_pClient->SetUseCookie(m_bUseCookie);
 
 	::LogClientStarting(strAddress, usPort);
 
@@ -397,8 +405,6 @@ EnHandleResult CClientDlg::OnHandShake(ITcpClient* pSender, CONNID dwConnID)
 {
 	::PostOnHandShake(dwConnID);
 
-	IHttpClient::FromS(pSender)->AddCookie("__reqSequence", "1");
-
 	SetAppState(ST_STARTED);
 	return HR_OK;
 }
@@ -448,8 +454,6 @@ EnHttpParseResult CClientDlg::OnHeader(IHttpClient* pSender, CONNID dwConnID, LP
 
 EnHttpParseResult CClientDlg::OnHeadersComplete(IHttpClient* pSender, CONNID dwConnID)
 {
-	CheckSetCookie(pSender);
-
 	CStringA strSummary = GetHeaderSummary(pSender, "    ", 0, TRUE);
 	::PostOnHeadersComplete(dwConnID, strSummary);
 
@@ -531,36 +535,6 @@ EnHandleResult CClientDlg::OnWSMessageComplete(IHttpClient* pSender, CONNID dwCo
 }
 
 // ------------------------------------------------------------------------------------------------------------- //
-
-void CClientDlg::CheckSetCookie(IHttpClient* pHttpClient)
-{
-	DWORD dwHeaderCount = 0;
-	pHttpClient->GetHeaders("Set-Cookie", nullptr, dwHeaderCount);
-
-	if(dwHeaderCount == 0)
-		return;
-
-	unique_ptr<LPCSTR[]> values(new LPCSTR[dwHeaderCount]);
-	VERIFY(pHttpClient->GetHeaders("Set-Cookie", values.get(), dwHeaderCount));
-
-	for(DWORD i = 0; i < dwHeaderCount; i++)
-	{
-		CStringA strValue = values[i];
-
-		int j = 0;
-		CStringA strItem = strValue.Tokenize("; ", j);
-
-		if(j <= 0)
-			continue;
-
-		int k = strItem.Find('=');
-
-		if(k <= 0)
-			continue;
-
-		pHttpClient->AddCookie(strItem.Left(k), strItem.Mid(k + 1));
-	}
-}
 
 CStringA CClientDlg::GetHeaderSummary(IHttpClient* pHttpClient, LPCSTR lpszSep, int iSepCount, BOOL bWithContentLength)
 {

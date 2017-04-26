@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 4.1.3
+ * Version	: 4.2.1
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -140,6 +140,8 @@ public:
 	*/
 	virtual BOOL GetConnectionExtra			(CONNID dwConnID, PVOID* ppExtra)	= 0;
 
+	/* 检测是否为安全连接（SSL/HTTPS） */
+	virtual BOOL IsSecure				()									= 0;
 	/* 检查通信组件是否已启动 */
 	virtual BOOL HasStarted				()									= 0;
 	/* 查看通信组件当前状态 */
@@ -487,6 +489,8 @@ public:
 	/* 获取连接的附加数据 */
 	virtual PVOID GetExtra					()													= 0;
 
+	/* 检测是否为安全连接（SSL/HTTPS） */
+	virtual BOOL IsSecure					()													= 0;
 	/* 检查通信组件是否已启动 */
 	virtual BOOL HasStarted					()													= 0;
 	/* 查看通信组件当前状态 */
@@ -1351,16 +1355,12 @@ public:
 	/***************************** 属性访问方法 *****************************/
 
 	/* 获取 HTTP 状态码 */
-	virtual USHORT GetStatusCode(CONNID dwConnID)														= 0;
+	virtual USHORT GetStatusCode(CONNID dwConnID)						= 0;
 
-	/* 添加 Cookie */
-	virtual BOOL AddCookie(CONNID dwConnID, LPCSTR lpszName, LPCSTR lpszValue, BOOL bRelpace = TRUE)	= 0;
-	/* 删除 Cookie */
-	virtual BOOL DeleteCookie(CONNID dwConnID, LPCSTR lpszName)											= 0;
-	/* 删除所有 Cookie */
-	virtual BOOL DeleteAllCookies(CONNID dwConnID)														= 0;
-
-
+	/* 设置是否使用 Cookie（默认：TRUE） */
+	virtual void SetUseCookie(BOOL bUseCookie)							= 0;
+	/* 检查是否使用 Cookie */
+	virtual BOOL IsUseCookie()											= 0;
 };
 
 /************************************************************************
@@ -1500,24 +1500,18 @@ public:
 	virtual USHORT GetStatusCode()										= 0;
 
 	/* 获取某个请求头（单值） */
-	virtual BOOL GetHeader(LPCSTR lpszName, LPCSTR* lpszValue)							= 0;
+	virtual BOOL GetHeader(LPCSTR lpszName, LPCSTR* lpszValue)						= 0;
 	/* 获取某个请求头（多值） */
-	virtual BOOL GetHeaders(LPCSTR lpszName, LPCSTR lpszValue[], DWORD& dwCount)		= 0;
+	virtual BOOL GetHeaders(LPCSTR lpszName, LPCSTR lpszValue[], DWORD& dwCount)	= 0;
 	/* 获取所有请求头 */
-	virtual BOOL GetAllHeaders(THeader lpHeaders[], DWORD& dwCount)						= 0;
+	virtual BOOL GetAllHeaders(THeader lpHeaders[], DWORD& dwCount)					= 0;
 	/* 获取所有请求头名称 */
-	virtual BOOL GetAllHeaderNames(LPCSTR lpszName[], DWORD& dwCount)					= 0;
+	virtual BOOL GetAllHeaderNames(LPCSTR lpszName[], DWORD& dwCount)				= 0;
 
 	/* 获取 Cookie */
-	virtual BOOL GetCookie(LPCSTR lpszName, LPCSTR* lpszValue)							= 0;
+	virtual BOOL GetCookie(LPCSTR lpszName, LPCSTR* lpszValue)						= 0;
 	/* 获取所有 Cookie */
-	virtual BOOL GetAllCookies(TCookie lpCookies[], DWORD& dwCount)						= 0;
-	/* 添加 Cookie */
-	virtual BOOL AddCookie(LPCSTR lpszName, LPCSTR lpszValue, BOOL bRelpace = TRUE)		= 0;
-	/* 删除 Cookie */
-	virtual BOOL DeleteCookie(LPCSTR lpszName)											= 0;
-	/* 删除所有 Cookie */
-	virtual BOOL DeleteAllCookies()														= 0;
+	virtual BOOL GetAllCookies(TCookie lpCookies[], DWORD& dwCount)					= 0;
 
 	/*
 	// !! maybe implemented in future !! //
@@ -1600,6 +1594,10 @@ public:
 	/***********************************************************************/
 	/***************************** 属性访问方法 *****************************/
 
+	/* 设置是否使用 Cookie（默认：TRUE） */
+	virtual void SetUseCookie(BOOL bUseCookie)								= 0;
+	/* 检查是否使用 Cookie */
+	virtual BOOL IsUseCookie()												= 0;
 };
 
 /************************************************************************
@@ -1967,4 +1965,21 @@ public:
 	virtual EnHandleResult OnWSMessageHeader(IHttpClient* pSender, CONNID dwConnID, BOOL bFinal, BYTE iReserved, BYTE iOperationCode, const BYTE lpszMask[4], ULONGLONG ullBodyLen)	{return HR_IGNORE;}
 	virtual EnHandleResult OnWSMessageBody(IHttpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength)		{return HR_IGNORE;}
 	virtual EnHandleResult OnWSMessageComplete(IHttpClient* pSender, CONNID dwConnID)									{return HR_IGNORE;}
+};
+
+/************************************************************************
+名称：IHttpClientListener 监听器抽象基类
+描述：定义某些事件的默认处理方法（忽略事件）
+************************************************************************/
+
+class CHttpSyncClientListener : public CHttpClientListener
+{
+public:
+	virtual EnHandleResult OnClose(ITcpClient* pSender, CONNID dwConnID, EnSocketOperation enOperation, int iErrorCode)	{return HR_IGNORE;}
+
+	virtual EnHttpParseResult OnHeadersComplete(IHttpClient* pSender, CONNID dwConnID)									{return HPR_OK;}
+	virtual EnHttpParseResult OnBody(IHttpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength)				{return HPR_OK;}
+	virtual EnHttpParseResult OnMessageComplete(IHttpClient* pSender, CONNID dwConnID)									{return HPR_OK;}
+	virtual EnHttpParseResult OnParseError(IHttpClient* pSender, CONNID dwConnID, int iErrorCode, LPCSTR lpszErrorDesc)	{return HPR_OK;}
+
 };

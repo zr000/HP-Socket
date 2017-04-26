@@ -1,7 +1,7 @@
 /*
  * Copyright: JessMA Open Source (ldcsaa@gmail.com)
  *
- * Version	: 2.3.17
+ * Version	: 2.3.18
  * Author	: Bruce Liang
  * Website	: http://www.jessma.org
  * Project	: https://github.com/ldcsaa
@@ -661,6 +661,121 @@ private:
 /************************************************************************/
 /*                            ±È½Ï·Âº¯Êý                                */
 /************************************************************************/
+
+template<class T> struct char_comparator
+{
+	typedef T	row_type;
+	static row_type row_type_value(const T& v)		{return (row_type)v;}
+	static bool equal_to(const T& v1, const T& v2)	{return strcmp(v1, v2) == 0;}
+};
+
+template<class T> struct char_nc_comparator
+{
+	typedef T	row_type;
+	static row_type row_type_value(const T& v)		{return (row_type)v;}
+	static bool equal_to(const T& v1, const T& v2)	{return stricmp(v1, v2) == 0;}
+};
+
+template<class T> struct wchar_comparator
+{
+	typedef T	row_type;
+	static row_type row_type_value(const T& v)		{return (row_type)v;}
+	static bool equal_to(const T& v1, const T& v2)	{return wcscmp(v1, v2) == 0;}
+};
+
+template<class T> struct wchar_nc_comparator
+{
+	typedef T	row_type;
+	static row_type row_type_value(const T& v)		{return (row_type)v;}
+	static bool equal_to(const T& v1, const T& v2)	{return wcsicmp(v1, v2) == 0;}
+};
+
+template<class T> struct cstring_comparator
+{
+	typedef typename T::PCXSTR	row_type;
+	static row_type row_type_value(const T& v)		{return (row_type)v;}
+	static bool equal_to(const T& v1, const T& v2)	{return v1.Compare(v2) == 0;}
+};
+
+template<class T> struct cstring_nc_comparator
+{
+	typedef typename T::PCXSTR	row_type;
+	static row_type row_type_value(const T& v)		{return (row_type)v;}
+	static bool equal_to(const T& v1, const T& v2)	{return v1.CompareNoCase(v2) == 0;}
+};
+
+// char/wchar_t/CStringX hash function
+template<class T, class H> struct str_hash_func_t
+{
+	struct hash
+	{
+		size_t operator() (const T& t) const
+		{
+			return hash_value(H::row_type_value(t));
+		}
+	};
+
+	struct equal_to
+	{
+		bool operator() (const T& t1, const T& t2) const
+		{
+			return H::equal_to(t1, t2);
+		}
+	};
+
+};
+
+// char/wchar_t/CStringX hash function (no case)
+template<class T, class H> struct str_nc_hash_func_t
+{
+	struct hash
+	{
+		size_t operator() (const T& t) const
+		{
+			size_t _Val		 = 2166136261U;
+			H::row_type lpsz = H::row_type_value(t);
+			char c;
+
+			while((c = *lpsz++) != 0) 
+			{
+				if(c >= 'A' && c <= 'Z')
+					c += 32;
+
+				_Val = 16777619U * _Val ^ c;
+
+			}
+
+			return _Val;
+		}
+	};
+
+	struct equal_to
+	{
+		bool operator() (const T& t1, const T& t2) const
+		{
+			return H::equal_to(t1, t2);
+		}
+	};
+
+};
+
+typedef str_hash_func_t<LPCSTR, char_comparator<LPCSTR>>			str_hash_func;
+typedef str_hash_func_t<LPCWSTR, wchar_comparator<LPCWSTR>>			wstr_hash_func;
+typedef str_hash_func_t<CStringA, cstring_comparator<CStringA>>		cstringa_hash_func;
+typedef str_hash_func_t<CStringW, cstring_comparator<CStringW>>		cstringw_hash_func;
+typedef str_nc_hash_func_t<LPCSTR, char_comparator<LPCSTR>>			str_nc_hash_func;
+typedef str_nc_hash_func_t<LPCWSTR, wchar_comparator<LPCWSTR>>		wstr_nc_hash_func;
+typedef str_nc_hash_func_t<CStringA, cstring_comparator<CStringA>>	cstringa_nc_hash_func;
+typedef str_nc_hash_func_t<CStringW, cstring_comparator<CStringW>>	cstringw_nc_hash_func;
+
+#ifdef _UNICODE
+	typedef cstringw_hash_func		cstring_hash_func;
+	typedef cstringw_nc_hash_func	cstring_nc_hash_func;
+#else
+	typedef cstringa_hash_func		cstring_hash_func;
+	typedef cstringa_nc_hash_func	cstring_nc_hash_func;
+#endif
+
 struct bool_comp_func
 {
 	bool operator() (bool v1, bool v2) const

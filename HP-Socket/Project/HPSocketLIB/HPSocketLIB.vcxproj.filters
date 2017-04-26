@@ -204,6 +204,9 @@
     <ClInclude Include="..\..\..\Common\Src\zlib\zutil.h">
       <Filter>Common\zlib</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\HttpCookie.h">
+      <Filter>HPSocket\HTTP</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -322,6 +325,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Common\Src\zlib\zutil.c">
       <Filter>Common\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\HttpCookie.cpp">
+      <Filter>HPSocket\HTTP</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

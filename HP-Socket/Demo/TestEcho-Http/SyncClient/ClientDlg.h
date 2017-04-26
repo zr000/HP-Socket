@@ -9,11 +9,12 @@
 
 
 // CClientDlg dialog
-class CClientDlg : public CDialogEx
+class CClientDlg : public CDialogEx, public CHttpSyncClientListener
 {
 // Construction
 public:
 	CClientDlg(CWnd* pParent = NULL);	// standard constructor
+	~CClientDlg();
 
 // Dialog Data
 	enum { IDD = IDD_CLIENT_DIALOG };
@@ -46,14 +47,32 @@ protected:
 private:
 	void SetAppState(EnAppState state);
 	BOOL CheckStarted(BOOL bRestart = TRUE);
-	static void CheckSetCookie(IHttpSyncClient* pHttpClient);
 	static CStringA GetHeaderSummary(IHttpSyncClient* pHttpClient, LPCSTR lpszSep = "  ", int iSepCount = 0, BOOL bWithContentLength = TRUE);
+
+private:
+	virtual EnHandleResult OnConnect(ITcpClient* pSender, CONNID dwConnID);
+	virtual EnHandleResult OnClose(ITcpClient* pSender, CONNID dwConnID, EnSocketOperation enOperation, int iErrorCode);
+
+	virtual EnHttpParseResult OnHeader(IHttpClient* pSender, CONNID dwConnID, LPCSTR lpszName, LPCSTR lpszValue);
+	virtual EnHttpParseResult OnHeadersComplete(IHttpClient* pSender, CONNID dwConnID);
+	virtual EnHttpParseResult OnBody(IHttpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength);
+	virtual EnHttpParseResult OnChunkHeader(IHttpClient* pSender, CONNID dwConnID, int iLength);
+	virtual EnHttpParseResult OnChunkComplete(IHttpClient* pSender, CONNID dwConnID);
+	virtual EnHttpParseResult OnMessageComplete(IHttpClient* pSender, CONNID dwConnID);
+	virtual EnHttpParseResult OnUpgrade(IHttpClient* pSender, CONNID dwConnID, EnHttpUpgradeType enUpgradeType);
+
+	virtual EnHandleResult OnWSMessageHeader(IHttpClient* pSender, CONNID dwConnID, BOOL bFinal, BYTE iReserved, BYTE iOperationCode, const BYTE lpszMask[4], ULONGLONG ullBodyLen);
+	virtual EnHandleResult OnWSMessageBody(IHttpClient* pSender, CONNID dwConnID, const BYTE* pData, int iLength);
+	virtual EnHandleResult OnWSMessageComplete(IHttpClient* pSender, CONNID dwConnID);
+
 
 private:
 	CButton m_Send;
 	CListBox m_Info;
 	CEdit m_Address;
 	CEdit m_Port;
+	CButton m_UseCookie;
+	CButton m_Listener;
 	CButton m_Start;
 	CButton m_Stop;
 	CComboBox m_Method;
@@ -65,6 +84,8 @@ private:
 	CListBox m_Headers;
 	CEdit m_Body;
 
+	BOOL m_bUseCookie;
+	BOOL m_bListener;
 	BOOL m_bWebSocket;
 	EnAppState m_enState;
 

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HttpService
+namespace HttpServerDemo
 {
     public class MyException : Exception
     {
